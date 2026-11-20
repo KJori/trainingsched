@@ -38,6 +38,12 @@ test("page is served with the athlete's name and config, coach off without provi
   assert.match(html, /<title>Sam(&#39;|')s Training Week<\/title>/);
   assert.match(html, /"pronoun":"she"/);
   assert.doesNotMatch(html, /%%TITLE%%/);
+  assert.doesNotMatch(html, /googleapis|gstatic/, "no requests to other sites");
+  const css = await (await fetch(anthropicApp.base + "/fonts.css")).text();
+  const font = css.match(/url\((fonts\/[^)]+\.woff2)\)/)[1];
+  const fr = await fetch(anthropicApp.base + "/" + font);
+  assert.equal(fr.headers.get("content-type"), "font/woff2");
+  assert.equal((await fetch(anthropicApp.base + "/fonts/../server/llm.js")).status, 404);
   const cfg = (await plainApp.api("/api/config")).body;
   assert.equal(cfg.llm.enabled, false);
   assert.equal((await plainApp.api("/api/llm", { method: "POST", body: JSON.stringify({ messages: [{ role: "user", content: "hi" }] }) })).body.code, "not_configured");

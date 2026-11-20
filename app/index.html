@@ -1,8 +1,6 @@
 <title>%%TITLE%%</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@500&family=Source+Sans+3:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="fonts.css">
 <style>
 /* Layout: alpine contour band, then the week as seven day columns, then load, checks, log, coaching and the editable structure/goals. */
 :root{
@@ -44,6 +42,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .bib h1{font-size:clamp(2.2rem,7vw,3.4rem);line-height:.95}
 .bib .sub{color:var(--band-muted);font-size:.95rem}
 .goalbox{text-align:right}
+@media (max-width:640px){.goalbox{text-align:left}}
 .goalbox .big{font-family:var(--f-display);font-size:2.6rem;line-height:.9;font-weight:700}
 .goalbox .label{color:var(--band-muted)}
 .status{display:inline-flex;gap:8px;align-items:center;font-size:.85rem;color:var(--band-muted)}

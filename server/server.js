@@ -92,6 +92,12 @@ async function handle(req, res) {
 
   if (req.method === "GET" && (p === "/" || p === "/index.html")) return send(res, 200, pageHtml(clientConfig()), { "content-type": "text/html; charset=utf-8" });
   if (req.method === "GET" && p === "/shim.js") return send(res, 200, shimJs, { "content-type": "text/javascript; charset=utf-8" });
+  if (req.method === "GET" && (p === "/fonts.css" || /^\/fonts\/[a-z0-9-]+\.(woff2|txt)$/.test(p))) {
+    const file = path.join(ROOT, "public", p);
+    if (!fs.existsSync(file)) return fail(res, 404, "not_found", "Not found");
+    const type = p.endsWith(".css") ? "text/css; charset=utf-8" : p.endsWith(".woff2") ? "font/woff2" : "text/plain; charset=utf-8";
+    return send(res, 200, fs.readFileSync(file), { "content-type": type, "cache-control": "public, max-age=604800" });
+  }
   if (req.method === "GET" && p === "/healthz") return send(res, 200, { ok: true });
   if (req.method === "GET" && p === "/api/config") return send(res, 200, clientConfig());
 
