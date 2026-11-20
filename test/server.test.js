@@ -144,3 +144,70 @@ test("seed.json in the data folder is imported once on first start", async () =>
     assert.ok(fs.existsSync(path.join(dir, "seed.json.imported")));
   } finally { child.kill(); }
 });
+
+test("settings from the page: name, coach, key masked and never exported, models, connection test", async () => {
+  const app = await startApp({ LLM_PROVIDER: "" });
+  try {
+    const { api } = app;
+    let v = (await api("/api/settings")).body;
+    assert.equal(v.firstRun, true);
+    assert.equal(v.llm.enabled, false);
+    assert.ok(v.providers.some((p) => p.id === "ollama" && !p.needsKey));
+    assert.equal((await api("/api/settings", { method: "PUT", body: JSON.stringify({ pronoun: "they" }) })).status, 400);
+
+    v = (await api("/api/settings", { method: "PUT", body: JSON.stringify({ name: "Robin", pronoun: "she" }) })).body;
+    assert.equal(v.firstRun, false);
+    assert.equal(v.client.title, "Robin's Training Week");
+    assert.match(await (await fetch(app.base + "/")).text(), /<title>Robin(&#39;|')s Training Week<\/title>/);
+
+    // Model list for a draft, before anything is saved; the bad key is reported as such.
+    const models = await api("/api/settings/models", { method: "POST", body: JSON.stringify({ llm: { provider: "openai_compatible", baseUrl: `${mock.url}/v1`, key: "k-1" } }) });
+    assert.deepEqual(models.body.models, ["model-a", "model-b"]);
+    assert.equal((await api("/api/settings/models", { method: "POST", body: JSON.stringify({ llm: { provider: "anthropic", baseUrl: `${mock.url}/v1`, key: "bad" } }) })).body.code, "auth_failed");
+
+    v = (await api("/api/settings", { method: "PUT", body: JSON.stringify({ llm: { provider: "anthropic", baseUrl: `${mock.url}/v1`, key: "sk-secret-1234", model: "model-a", tools: true } }) })).body;
+    assert.equal(v.llm.enabled, true);
+    assert.equal(v.llm.key.hint, "…1234");
+    assert.equal(v.client.llm.enabled, true);
+    const raw = JSON.stringify(v) + JSON.stringify((await api("/api/settings")).body) + JSON.stringify((await api("/api/export")).body) + await (await fetch(app.base + "/")).text();
+    assert.doesNotMatch(raw, /sk-secret/, "the key never leaves the server");
+
+    const t = (await api("/api/settings/test", { method: "POST", body: "{}" })).body;
+    assert.equal(t.ok, true);
+    assert.equal(t.tools, "works");
+    assert.equal(mock.requests.at(-1).headers["x-api-key"], "sk-secret-1234");
+
+    // Saving again without a key keeps it; moving to another address drops it until it is entered again.
+    v = (await api("/api/settings", { method: "PUT", body: JSON.stringify({ llm: { provider: "anthropic", baseUrl: `${mock.url}/v1`, model: "model-b" } }) })).body;
+    assert.equal(v.llm.enabled, true);
+    v = (await api("/api/settings", { method: "PUT", body: JSON.stringify({ llm: { provider: "anthropic", baseUrl: "http://127.0.0.1:9/v1", model: "model-b" } }) })).body;
+    assert.equal(v.llm.enabled, false);
+    assert.equal(v.llm.key.stale, true);
+
+    v = (await api("/api/settings", { method: "PUT", body: JSON.stringify({ llm: { provider: "" } }) })).body;
+    assert.equal(v.llm.enabled, false);
+    assert.equal((await api("/api/settings/test", { method: "POST", body: "{}" })).body.code, "not_configured");
+    const file = fs.readFileSync(path.join(app.dir, "settings.json"), "utf8");
+    assert.equal((fs.statSync(path.join(app.dir, "settings.json")).mode & 0o777).toString(8), "600");
+    assert.ok(!(await api("/api/db")).body.collections.settings, "settings are not part of the training data");
+    assert.ok(file.includes("Robin"));
+  } finally { app.stop(); }
+});
+
+test("environment settings still work and are shown without the key", async () => {
+  const app = await startApp({ ATHLETE_NAME: "Kim", LLM_PROVIDER: "mistral", LLM_MODEL: "m", LLM_API_KEY: "env-key-9876", LLM_BASE_URL: `${mock.url}/v1` });
+  try {
+    const v = (await app.api("/api/settings")).body;
+    assert.equal(v.firstRun, false);
+    assert.equal(v.llm.provider, "mistral");
+    assert.equal(v.llm.source, "env");
+    assert.equal(v.llm.key.hint, "…9876");
+    assert.doesNotMatch(JSON.stringify(v), /env-key/);
+    const t = (await app.api("/api/settings/test", { method: "POST", body: "{}" })).body;
+    assert.equal(t.tools, "works");
+    // Saving the coach in the page keeps using the environment key for the same provider and address.
+    const s = (await app.api("/api/settings", { method: "PUT", body: JSON.stringify({ llm: { provider: "mistral", baseUrl: `${mock.url}/v1`, model: "m2" } }) })).body;
+    assert.equal(s.llm.enabled, true);
+    assert.equal(s.llm.key.source, "env");
+  } finally { app.stop(); }
+});

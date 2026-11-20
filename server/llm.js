@@ -7,27 +7,33 @@
 // Tools run in the browser (they create proposal cards); this file only translates
 // between that format and each provider's API, and keeps the API key on the server.
 
-const PRESETS = {
-  anthropic:  { kind: "anthropic", base: "https://api.anthropic.com/v1" },
-  openai:     { kind: "openai", base: "https://api.openai.com/v1", maxTokensField: "max_completion_tokens" },
-  mistral:    { kind: "openai", base: "https://api.mistral.ai/v1" },
-  deepseek:   { kind: "openai", base: "https://api.deepseek.com" },
-  gemini:     { kind: "openai", base: "https://generativelanguage.googleapis.com/v1beta/openai" },
-  openrouter: { kind: "openai", base: "https://openrouter.ai/api/v1" },
-  ollama:     { kind: "openai", base: "http://localhost:11434/v1", keyless: true },
-  openai_compatible: { kind: "openai", base: "" },
+export const PRESETS = {
+  anthropic:  { label: "Anthropic (Claude)", kind: "anthropic", base: "https://api.anthropic.com/v1" },
+  openai:     { label: "OpenAI", kind: "openai", base: "https://api.openai.com/v1", maxTokensField: "max_completion_tokens" },
+  mistral:    { label: "Mistral", kind: "openai", base: "https://api.mistral.ai/v1" },
+  deepseek:   { label: "DeepSeek", kind: "openai", base: "https://api.deepseek.com" },
+  gemini:     { label: "Google Gemini", kind: "openai", base: "https://generativelanguage.googleapis.com/v1beta/openai" },
+  openrouter: { label: "OpenRouter", kind: "openai", base: "https://openrouter.ai/api/v1" },
+  ollama:     { label: "Ollama (local)", kind: "openai", base: "http://localhost:11434/v1", keyless: true },
+  openai_compatible: { label: "Other OpenAI-compatible server", kind: "openai", base: "", keyless: true },
 };
+
+// Inside the Docker image, "localhost" is the container itself, so Ollama on the host is reached through host.docker.internal.
+export function defaultBase(provider, env = process.env) {
+  if (provider === "ollama" && env.TS_DOCKER) return "http://host.docker.internal:11434/v1";
+  return PRESETS[provider]?.base || "";
+}
 
 export function llmConfig(env = process.env) {
   const provider = (env.LLM_PROVIDER || "").trim().toLowerCase();
-  if (!provider || provider === "none") return { enabled: false, reason: "LLM_PROVIDER is not set" };
+  if (!provider || provider === "none") return { enabled: false, reason: "No provider is chosen" };
   const preset = PRESETS[provider];
   if (!preset) return { enabled: false, reason: `Unknown LLM_PROVIDER "${provider}". Use one of: ${Object.keys(PRESETS).join(", ")}` };
   const cfg = {
     enabled: true,
     provider,
     kind: preset.kind,
-    base: (env.LLM_BASE_URL || preset.base).replace(/\/+$/, ""),
+    base: (env.LLM_BASE_URL || defaultBase(provider, env)).replace(/\/+$/, ""),
     key: env.LLM_API_KEY || "",
     model: env.LLM_MODEL || "",
     quickModel: env.LLM_MODEL_QUICK || "",
@@ -36,9 +42,9 @@ export function llmConfig(env = process.env) {
     tools: !/^(0|false|no|off)$/i.test(env.LLM_TOOLS || "true"),
     maxTokensField: env.LLM_MAX_TOKENS_FIELD || preset.maxTokensField || "max_tokens",
   };
-  if (!cfg.base) return { enabled: false, reason: "LLM_BASE_URL is required for openai_compatible" };
-  if (!cfg.model) return { enabled: false, reason: "LLM_MODEL is not set" };
-  if (!cfg.key && !preset.keyless) return { enabled: false, reason: "LLM_API_KEY is not set" };
+  if (!cfg.base) return { enabled: false, reason: "A server address is needed for this provider" };
+  if (!cfg.key && !preset.keyless) return { enabled: false, reason: "No API key is set" };
+  if (!cfg.model) return { enabled: false, reason: "No model is chosen" };
   return cfg;
 }
 
@@ -47,14 +53,16 @@ export class LlmError extends Error {
 }
 
 function errorFromStatus(status, detail) {
-  const msg = (detail || "").slice(0, 300);
+  let msg = detail || "";
+  try { const j = JSON.parse(msg); const e = Array.isArray(j) ? j[0]?.error || j[0] : j.error || j; msg = (typeof e === "string" ? e : e?.message || j.message || j.detail || msg); } catch {}
+  msg = String(typeof msg === "string" ? msg : JSON.stringify(msg)).slice(0, 300);
   if (status === 429) return new LlmError("rate_limited", `The model provider is rate limiting requests. ${msg}`, 429);
   if (status === 401 || status === 403) return new LlmError("auth_failed", `The model provider refused the API key. ${msg}`, 502);
   if (status === 400 || status === 404 || status === 422) return new LlmError("bad_request", `The model provider rejected the request. ${msg}`, 502);
   return new LlmError("unavailable", `The model provider returned an error (${status}). ${msg}`, 502);
 }
 
-async function post(cfg, url, headers, body, signal) {
+async function post(cfg, url, headers, body, signal, method = "POST") {
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(new Error("timeout")), cfg.timeoutMs);
   const onAbort = () => ctl.abort(new Error("cancelled"));
@@ -62,7 +70,7 @@ async function post(cfg, url, headers, body, signal) {
   try {
     let res;
     try {
-      res = await fetch(url, { method: "POST", headers: { "content-type": "application/json", ...headers }, body: JSON.stringify(body), signal: ctl.signal });
+      res = await fetch(url, { method, headers: method === "GET" ? headers : { "content-type": "application/json", ...headers }, body: method === "GET" ? undefined : JSON.stringify(body), signal: ctl.signal });
     } catch (e) {
       if (signal?.aborted) throw new LlmError("cancelled", "Request cancelled", 499);
       if (ctl.signal.aborted) throw new LlmError("unavailable", `The model provider did not answer within ${Math.round(cfg.timeoutMs / 1000)} s.`, 504);
@@ -179,4 +187,19 @@ export async function complete(cfg, { messages, tools, tier, signal }) {
   return cfg.kind === "anthropic"
     ? callAnthropic(cfg, { messages, tools: useTools, model, signal })
     : callOpenAI(cfg, { messages, tools: useTools, model, signal });
+}
+
+// Model names the provider offers to this key, for the settings page. Chat models only, as far as the name tells.
+export async function listModels(cfg, { signal } = {}) {
+  if (!cfg.base) throw new LlmError("not_configured", "A server address is needed for this provider", 400);
+  if (!cfg.key && !PRESETS[cfg.provider]?.keyless) throw new LlmError("not_configured", "Enter the API key first", 400);
+  const headers = cfg.kind === "anthropic"
+    ? { "x-api-key": cfg.key, "anthropic-version": "2023-06-01" }
+    : cfg.key ? { authorization: `Bearer ${cfg.key}` } : {};
+  const url = `${cfg.base}/models${cfg.kind === "anthropic" ? "?limit=1000" : ""}`;
+  const data = await post({ ...cfg, timeoutMs: 20000 }, url, headers, null, signal, "GET");
+  const list = Array.isArray(data?.data) ? data.data : Array.isArray(data?.models) ? data.models : Array.isArray(data) ? data : [];
+  const skip = /embed|moderation|whisper|tts|dall-e|image|transcribe|audio|realtime|ocr|rerank|guard|search-preview|computer-use/i;
+  const ids = list.map((m) => String(m?.id || m?.name || m || "").replace(/^models\//, "")).filter((id) => id && !skip.test(id));
+  return [...new Set(ids)].sort((a, b) => a.localeCompare(b)).slice(0, 2000);
 }

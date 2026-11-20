@@ -120,7 +120,7 @@ a.btn{text-decoration:none;color:inherit}
 .fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:10px}
 .field{display:grid;gap:4px;min-width:0}
 .field label,.flabel{font-size:.74rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
-input[type=text],input[type=number],input[type=date],select,textarea{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:7px;padding:7px 9px;min-width:0}
+input[type=text],input[type=password],input[type=number],input[type=date],select,textarea{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:7px;padding:7px 9px;min-width:0}
 textarea{resize:vertical;min-height:58px}
 .wide{grid-column:1/-1}
 .feel{display:flex;gap:6px;flex-wrap:wrap}
@@ -194,6 +194,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .tabs a{font-family:var(--f-display);font-size:1.15rem;font-weight:700;letter-spacing:.02em;color:var(--muted);text-decoration:none;padding:11px 14px 8px;border-bottom:3px solid transparent;white-space:nowrap;display:inline-flex;gap:6px;align-items:center}
 .tabs a:hover{color:var(--ink)}
 .tabs a.on{color:var(--ink);border-bottom-color:var(--accent)}
+@media (max-width:480px){.tabs a{font-size:.98rem;padding:10px 8px 7px}}
 .badge{font-family:var(--f-body);font-size:.7rem;font-weight:700;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--warn);color:var(--surface);display:inline-grid;place-items:center}
 .view{display:grid;gap:22px;min-width:0}
 .wknav{display:flex;gap:6px;align-items:center}
@@ -205,6 +206,15 @@ table.prog{min-width:520px;font-size:.9rem} table.prog tr.cur td,table.prog tr.c
 .ladder{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 0}
 .ladder span{font-family:var(--f-data);font-size:.8rem;padding:3px 9px;border-radius:999px;background:var(--surface-2);color:var(--muted)}
 .ladder span.done{color:var(--ok)} .ladder span.cur{background:var(--accent);color:var(--surface)}
+.welcome{border-color:var(--accent);border-width:2px}
+.steps{margin:0 0 14px;padding-left:22px;display:grid;gap:7px;max-width:72ch;line-height:1.45}
+.tick{display:flex;gap:8px;align-items:flex-start;font-size:.9rem;line-height:1.4} .tick input{margin-top:3px;flex:none}
+.pill{font-size:.74rem;font-weight:700;letter-spacing:.04em;padding:3px 10px;border-radius:999px;background:var(--surface-2);color:var(--muted)} .pill.on{color:var(--ok)} .pill.warn{color:var(--warn)}
+.llm-fields{grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr))}
+#llmPick{margin-top:6px} #llmMore summary{cursor:pointer;width:max-content}
+.result{padding:10px 12px;border-radius:8px;background:var(--surface-2);font-size:.9rem;line-height:1.5;border-left:4px solid var(--line);overflow-wrap:anywhere}
+.result.good{border-left-color:var(--ok)} .result.bad{border-left-color:var(--crit)} .result.meh{border-left-color:var(--warn)}
+.result small{display:block;margin-top:4px;color:var(--muted)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
@@ -214,7 +224,7 @@ table.prog{min-width:520px;font-size:.9rem} table.prog tr.cur td,table.prog tr.c
     <div class="bib">
       <div>
         <div class="label" style="color:var(--band-muted)">Ride · climb · run</div>
-        <h1>%%TITLE%%</h1>
+        <h1 id="pageTitle">%%TITLE%%</h1>
         <div class="sub" id="phaseLine">Base building · no goal set yet</div>
       </div>
       <div class="goalbox" id="goalBox"></div>
@@ -228,6 +238,7 @@ table.prog{min-width:520px;font-size:.9rem} table.prog tr.cur td,table.prog tr.c
   <a href="#coach" data-tab="coach">Coach</a>
   <a href="#progress" data-tab="progress">Progress</a>
   <a href="#plan" data-tab="plan">Plan</a>
+  <a href="#settings" data-tab="settings">Settings</a>
 </nav></div>
 
 <main class="wrap">
@@ -334,11 +345,55 @@ table.prog{min-width:520px;font-size:.9rem} table.prog tr.cur td,table.prog tr.c
         <textarea id="about" rows="7" placeholder="Current level, equipment, constraints, injuries, what you enjoy"></textarea>
         <span class="note" id="aboutNote">Saved when you click outside the box. Coaching notes use this.</span></div>
     </section>
-  <section class="panel" aria-labelledby="dataTitle">
-    <div class="panel-head"><h2 id="dataTitle">Your data</h2><span class="note num" id="dataCount"></span></div>
-    <p class="note" style="margin:0 0 12px;max-width:70ch">Your whole training history in one JSON file: sessions, plan, progression, numbers, goals, background and coach notes. Use it as a backup, to move to another server, or to bring in history from an earlier training page.</p>
-    <div class="row-actions"><a class="btn" href="api/export" download id="exportBtn">Export everything</a><label class="btn" for="importIn">Import a file</label><input type="file" id="importIn" accept=".json,application/json" hidden></div>
-    <div id="importBox" style="margin-top:12px" hidden></div>
+ </div>
+
+ <div class="view" data-view="settings" hidden>
+  <section class="panel welcome" id="welcome" aria-labelledby="welcomeTitle" hidden>
+    <div class="panel-head"><h2 id="welcomeTitle">Welcome</h2></div>
+    <ol class="steps">
+      <li><b>Your name</b> below, so the page and the coach know who they're for.</li>
+      <li><b>Your history</b>, if you have one: <i>Import a file</i> under Your data. Exports from this page and from the earlier training pages both work.</li>
+      <li><b>A coach</b>, if you want one: pick a provider, paste a key, choose a model, and test it. Everything else works without.</li>
+      <li><b>Your usual week</b>: the sessions you normally do on each day. The plan, targets and checks build on it.</li>
+    </ol>
+    <div class="row-actions"><button class="btn primary" type="button" id="welcomeWeek">Set up my week</button><button class="btn ghost" type="button" id="welcomeSkip">Later</button></div>
+  </section>
+  <div class="grid-2">
+    <section class="panel" aria-labelledby="meTitle">
+      <div class="panel-head"><h2 id="meTitle">You</h2></div>
+      <div class="fields">
+        <div class="field"><label for="meName">Name</label><input type="text" id="meName" maxlength="40" autocomplete="given-name" placeholder="First name"></div>
+        <div class="field"><label for="mePronoun">The coach says</label><select id="mePronoun"><option value="he">he / him</option><option value="she">she / her</option></select></div>
+        <div class="row-actions wide"><button class="btn primary" type="button" id="meSave">Save</button><span class="note" id="meNote"></span></div>
+      </div>
+    </section>
+    <section class="panel" aria-labelledby="dataTitle">
+      <div class="panel-head"><h2 id="dataTitle">Your data</h2><span class="note num" id="dataCount"></span></div>
+      <p class="note" style="margin:0 0 12px;max-width:70ch">Your whole training history in one JSON file: sessions, plan, progression, numbers, goals, background and coach notes. Use it as a backup, to move to another server, or to bring in history from an earlier training page.</p>
+      <div class="row-actions"><a class="btn" href="api/export" download id="exportBtn">Export everything</a><label class="btn" for="importIn">Import a file</label><input type="file" id="importIn" accept=".json,application/json" hidden></div>
+      <div id="importBox" style="margin-top:12px" hidden></div>
+    </section>
+  </div>
+  <section class="panel" aria-labelledby="llmTitle">
+    <div class="panel-head"><h2 id="llmTitle">Coach</h2><span class="pill" id="llmState"></span></div>
+    <p class="note" style="margin:0 0 12px;max-width:72ch">The coach runs on an AI model from a provider you choose, with your own API key. Providers bill API use per request, separately from chat subscriptions such as Claude Pro or ChatGPT Plus, which don't include it. You can also run a model yourself with Ollama. The key stays on this server and is never sent to the browser or included in exports.</p>
+    <div class="fields llm-fields">
+      <div class="field"><label for="llmProvider">Provider</label><select id="llmProvider"><option value="">Off</option></select></div>
+      <div class="field" id="llmKeyF"><label for="llmKey">API key</label><input type="password" id="llmKey" autocomplete="off" spellcheck="false"></div>
+      <p class="note wide" id="llmHint" hidden></p>
+      <div class="field wide" id="llmBaseF"><label for="llmBase">Server address</label><input type="text" id="llmBase" spellcheck="false" inputmode="url"></div>
+      <div class="field wide" id="llmModelF"><label for="llmModel">Model</label>
+        <div class="ask-row"><input type="text" id="llmModel" spellcheck="false" placeholder="Load the list, or type the model name"><button class="btn" type="button" id="llmLoad">Load models</button></div>
+        <select id="llmPick" hidden aria-label="Models from the provider"></select><span class="note" id="llmModelNote"></span></div>
+      <details class="wide" id="llmMore"><summary class="note">More options</summary>
+        <div class="fields" style="margin-top:10px">
+          <div class="field"><label for="llmQuick">Cheaper model for small jobs</label><input type="text" id="llmQuick" spellcheck="false" placeholder="Optional"></div>
+          <label class="tick wide"><input type="checkbox" id="llmTools" checked> Tool calling: lets the coach propose changes to your plan and numbers. Switch off for models that don't support it.</label>
+        </div>
+      </details>
+      <div class="row-actions wide"><button class="btn primary" type="button" id="llmSave">Save and test</button><span class="note" id="llmBusy"></span></div>
+      <div class="wide" id="llmResult" hidden></div>
+    </div>
   </section>
  </div>
 </main>
@@ -346,7 +401,7 @@ table.prog{min-width:520px;font-size:.9rem} table.prog tr.cur td,table.prog tr.c
 <script>
 (() => {
 "use strict";
-const TSC=window.TS_CONFIG||{}; const ATH=TSC.name||"the athlete"; const SHE=TSC.pronoun==="she";
+const TSC=window.TS_CONFIG||(window.TS_CONFIG={}); let ATH=TSC.name||"the athlete"; let SHE=TSC.pronoun==="she";
 const PT=(strs,...vals)=>strs.reduce((a,x,i)=>a+P(x)+(i<vals.length?vals[i]:""),"");
 const P=s=>SHE?s.replace(/\b(he|He|him|his|His|himself)\b/g,w=>({he:"she",He:"She",him:"her",his:"her",His:"Her",himself:"herself"}[w])):s;
 const SPORTS = {
@@ -1024,13 +1079,87 @@ async function runImport(mode,btn){ if(!pendingImport) return; btn.disabled=true
   try{ const j=await postImport({file:pendingImport,mode}); pendingImport=null; importBox(`<p class="ok-t">Imported: ${esc(countsTxt(j.counts))}${mode==="replace"?" (replaced everything)":""}.</p>`); }
   catch(err){ btn.disabled=false; btn.textContent=mode==="replace"?"Replace everything":"Add to my data"; importBox($("importBox").innerHTML+`<p class="err">${esc(err.message)}</p>`); } }
 
+// ---------- settings ----------
+let st=null, stLoading=null, llmModels=[];
+const HINTS={
+  anthropic:'Create a key at <b>console.anthropic.com</b> → API keys.',
+  openai:'Create a key at <b>platform.openai.com</b> → API keys.',
+  mistral:'Create a key at <b>console.mistral.ai</b> → API keys.',
+  deepseek:'Create a key at <b>platform.deepseek.com</b> → API keys.',
+  gemini:'Create a key at <b>aistudio.google.com</b> → Get API key.',
+  openrouter:'Create a key at <b>openrouter.ai</b> → Keys. One key gives you models from many providers.',
+  ollama:'No key needed. Ollama has to accept connections from the network: start it with <code>OLLAMA_HOST=0.0.0.0</code>. For Ollama on this server the address below works as it is; for another computer, use its address, e.g. <code>http://192.168.1.50:11434/v1</code>.',
+  openai_compatible:'Any server with an OpenAI-style chat API, such as LM Studio, vLLM or LiteLLM. Enter its address including <code>/v1</code>; a key only if it needs one.'
+};
+async function api(path,opts={}){ let r; try{ r=await fetch(path,{...opts,headers:{"content-type":"application/json"}}); }catch(_){ throw Object.assign(new Error("Can't reach the server."),{code:"unavailable"}); }
+  const j=await r.json().catch(()=>({})); if(!r.ok) throw Object.assign(new Error(j.message||`The server answered ${r.status}.`),{code:j.code}); return j; }
+function loadSettings(force){ if(stLoading||(st&&!force)) return stLoading; stLoading=api("api/settings").then(j=>{ st=j; fillSettings(); }).catch(e=>{ $("llmResult").hidden=false; $("llmResult").className="wide result bad"; $("llmResult").textContent=e.message; }).finally(()=>{ stLoading=null; }); return stLoading; }
+const provOf=id=>st?.providers.find(p=>p.id===id);
+function fillSettings(){ if(!st) return;
+  $("welcome").hidden=!TSC.firstRun;
+  if(document.activeElement!==$("meName")) $("meName").value=st.name||""; $("mePronoun").value=st.pronoun||"he";
+  const sel=$("llmProvider"); if(sel.options.length<2) sel.insertAdjacentHTML("beforeend",st.providers.map(p=>`<option value="${esc(p.id)}">${esc(p.label)}</option>`).join(""));
+  const l=st.llm; sel.value=l.provider||""; $("llmModel").value=l.model||""; $("llmQuick").value=l.quickModel||""; $("llmTools").checked=l.tools!==false; $("llmBase").value=l.baseUrl||""; $("llmKey").value="";
+  const pill=$("llmState"); pill.className="pill"+(l.enabled?" on":l.provider?" warn":""); pill.textContent=l.enabled?"On":l.provider?"Not ready":"Off";
+  if(l.provider&&!l.enabled&&l.reason&&$("llmResult").hidden){ showResult("meh",esc(l.reason)+"."); }
+  llmModels=[]; $("llmPick").hidden=true; $("llmModelNote").textContent=""; syncProvider(); }
+function syncProvider(){ const id=$("llmProvider").value, p=provOf(id), l=st?.llm||{}; const on=!!id;
+  for(const f of ["llmKeyF","llmBaseF","llmModelF","llmMore"]) $(f).hidden=!on;
+  $("llmHint").hidden=!on; $("llmHint").innerHTML=HINTS[id]||"";
+  if(!on){ $("llmSave").textContent="Save"; return; } $("llmSave").textContent="Save and test";
+  $("llmKeyF").hidden=!p.needsKey&&!p.keyOptional; $("llmKey").previousElementSibling.textContent=p.keyOptional?"API key (if needed)":"API key";
+  const same=id===l.provider; const k=same?l.key:{set:false};
+  $("llmKey").placeholder=k.stale?"Enter the key again for this address":k.set?(k.source==="env"?`Set on the server (${k.hint})`:`Saved key ${k.hint}`):"Paste your key"; $("llmKey").title=k.set?"Leave empty to keep the saved key, or paste a new one":"";
+  $("llmBase").placeholder=p.defaultBase||"http://…/v1"; const needBase=!p.defaultBase; $("llmBaseF").hidden=!needBase&&id!=="ollama"&&!(same&&l.baseUrl);
+  $("llmBase").previousElementSibling.textContent=needBase?"Server address":id==="ollama"?"Server address":"Server address (optional)";
+  if(!same){ $("llmModel").value=""; } }
+function llmDraft(){ return { provider:$("llmProvider").value, baseUrl:$("llmBase").value.trim(), key:$("llmKey").value.trim()||undefined, model:$("llmModel").value.trim(), quickModel:$("llmQuick").value.trim(), tools:$("llmTools").checked }; }
+function showResult(kind,html){ const el=$("llmResult"); el.hidden=!html; el.className="wide result "+kind; el.innerHTML=html||""; }
+const ERR_HELP={
+  auth_failed:"The provider refused the key. Check that you copied all of it, and that the account has API access and credit.",
+  bad_request:"The provider rejected the request. Most often the model name: load the list and pick one.",
+  rate_limited:"The provider is rate limiting, or the account is out of credit.",
+  unavailable:"Couldn't get an answer from the provider.",
+  not_configured:"Not ready yet."
+};
+function errHtml(e){ const help=ERR_HELP[e.code]; const detail=String(e.message||"").replace(/^The model provider (refused the API key|rejected the request|is rate limiting requests)\.\s*/,""); return `${esc(help||"Something went wrong.")}${detail&&detail!==help?`<small>${esc(detail.slice(0,400))}</small>`:""}`; }
+async function loadModels(btn){ const d=llmDraft(); if(!d.provider) return; btn.disabled=true; btn.textContent="Loading…"; $("llmModelNote").textContent="";
+  try{ const {models}=await api("api/settings/models",{method:"POST",body:JSON.stringify({llm:d})}); llmModels=models;
+    const pick=$("llmPick"); if(!models.length){ pick.hidden=true; $("llmModelNote").textContent="The provider didn't list any chat models. Type the name instead."; return; }
+    pick.innerHTML=`<option value="">${models.length} model${models.length===1?"":"s"}: pick one</option>`+models.map(m=>`<option${m===d.model?" selected":""}>${esc(m)}</option>`).join(""); pick.hidden=false; }
+  catch(e){ $("llmModelNote").innerHTML=""; showResult("bad",errHtml(e)); }
+  finally{ btn.disabled=false; btn.textContent="Load models"; } }
+async function saveCoach(btn){ const d=llmDraft(); btn.disabled=true; showResult("",""); $("llmBusy").textContent="Saving…";
+  try{ const j=await api("api/settings",{method:"PUT",body:JSON.stringify({llm:{...d,key:d.key}})}); st=j; applyConfig(j.client); fillSettings(); showResult("","");
+    if(!d.provider){ $("llmBusy").textContent="Saved. The coach is off."; return; }
+    if(!j.llm.enabled){ $("llmBusy").textContent=""; showResult("meh",`Saved, but not ready: ${esc(j.llm.reason)}.`); return; }
+    $("llmBusy").textContent="Testing the connection…";
+    const t=await api("api/settings/test",{method:"POST",body:"{}"}); const secs=(t.ms/1000).toFixed(1); const who=`${esc(provOf(t.provider)?.label||t.provider)}, <b>${esc(t.model)}</b>`;
+    if(t.tools==="works") showResult("good",`Connected: ${who} answered in ${secs} s. Tool calling works, so the coach can propose changes to your plan and numbers.`);
+    else if(t.tools==="off") showResult("good",`Connected: ${who} answered in ${secs} s. Tool calling is off, so the chat gives advice but can't propose changes.`);
+    else showResult("meh",`Connected: ${who} answered in ${secs} s, but it didn't use the test tool. Notes and answers will work; proposals for your plan and numbers may not. Try a larger model, or switch tool calling off under More options.`); }
+  catch(e){ showResult("bad",`${st?.llm?.enabled?"Saved, but the test failed. ":""}${errHtml(e)}`); }
+  finally{ btn.disabled=false; $("llmBusy").textContent=""; } }
+async function saveMe(btn){ const name=$("meName").value.trim(); btn.disabled=true; $("meNote").textContent="Saving…";
+  try{ const j=await api("api/settings",{method:"PUT",body:JSON.stringify({name,pronoun:$("mePronoun").value})}); st=j; applyConfig(j.client); $("meNote").textContent="Saved."; }
+  catch(e){ $("meNote").textContent=e.message; } finally{ btn.disabled=false; } }
+function applyConfig(c){ if(!c) return; Object.assign(TSC,c,{firstRun:TSC.firstRun}); ATH=TSC.name||"the athlete"; SHE=TSC.pronoun==="she";
+  document.title=TSC.title||"Training Week"; $("pageTitle").textContent=TSC.title||"Training Week";
+  if(TSC.llm?.enabled){ toolsOk=!!TSC.llm.tools; if(!sample) claude.use("sample").then(s=>{ sample=s; if(s){ showCoach(); renderAll(); } }); else showCoach(); }
+  else if(sample||!coachOff){ sample=null; hideCoach(); }
+  renderAll(); }
+async function finishWelcome(){ TSC.firstRun=false; $("welcome").hidden=true; try{ await api("api/settings",{method:"PUT",body:JSON.stringify({done:true})}); }catch(_){} }
+$("llmProvider").addEventListener("change",()=>{ llmModels=[]; $("llmPick").hidden=true; showResult("",""); syncProvider(); });
+$("llmPick").addEventListener("change",e=>{ if(e.target.value) $("llmModel").value=e.target.value; });
+
 // ---------- views ----------
-const VIEWS=["week","coach","progress","plan"]; let coachOff=false, keepScroll=false;
-function showView(){ let v=(location.hash||"").slice(1); if(!VIEWS.includes(v)||(v==="coach"&&coachOff)) v="week";
+const VIEWS=["week","coach","progress","plan","settings"]; let coachOff=false, keepScroll=false;
+function showView(){ let v=(location.hash||"").slice(1); if(!VIEWS.includes(v)||(v==="coach"&&coachOff)) v=TSC.firstRun&&!location.hash?"settings":"week"; if(v==="settings") loadSettings();
   document.querySelectorAll(".view").forEach(el=>{ el.hidden=el.dataset.view!==v; });
-  document.querySelectorAll(".tabs a").forEach(a=>{ const on=a.dataset.tab===v; a.classList.toggle("on",on); if(on) a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current"); }); return v; }
+  document.querySelectorAll(".tabs a").forEach(a=>{ const on=a.dataset.tab===v; a.classList.toggle("on",on); if(on) a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current"); }); document.querySelector(".tabs a.on")?.scrollIntoView({block:"nearest",inline:"nearest"}); return v; }
 function goView(v){ if(location.hash!=="#"+v){ keepScroll=true; location.hash=v; } showView(); }
 function hideCoach(){ coachOff=true; $("coachPanel").hidden=true; document.querySelector('.tabs a[data-tab="coach"]').hidden=true; showView(); }
+function showCoach(){ coachOff=false; $("coachPanel").hidden=false; document.querySelector('.tabs a[data-tab="coach"]').hidden=false; }
 window.addEventListener("hashchange",()=>{ showView(); if(keepScroll){ keepScroll=false; return; } const top=document.querySelector(".band").offsetHeight; if(window.scrollY>top) window.scrollTo(0,top); });
 
 // ---------- wiring ----------
@@ -1039,7 +1168,9 @@ function applyWriteState(){ $("readonlyNote").hidden=!(db&&!canWrite); $("drop")
 async function saveTemplate(days){ await db.doc("config/template").set({days,updatedAt:Date.now()}); }
 document.addEventListener("click",async e=>{
   const t=e.target.closest("button, tr.run"); if(!t) return;
-  if(t.id==="useSuggested"||t.id==="useSuggested2"){ tplDraft=DAYS.map(()=>[]); editingTpl=true; goView("plan"); renderTemplate(); $("tplTitle").scrollIntoView({behavior:"smooth",block:"start"}); return; }
+  if(t.id==="llmLoad"){ loadModels(t); return; } if(t.id==="llmSave"){ saveCoach(t); return; } if(t.id==="meSave"){ saveMe(t); return; }
+  if(t.id==="welcomeSkip"){ finishWelcome(); goView("week"); return; }
+  if(t.id==="useSuggested"||t.id==="useSuggested2"||t.id==="welcomeWeek"){ if(t.id==="welcomeWeek") finishWelcome(); tplDraft=t.id==="welcomeWeek"&&template?JSON.parse(JSON.stringify(tplDays())):DAYS.map(()=>[]); editingTpl=true; goView("plan"); renderTemplate(); $("tplTitle").scrollIntoView({behavior:"smooth",block:"start"}); return; }
   if(t.dataset.quick){ addDraft({date:isoDate(today()),sport:t.dataset.quick}); return; }
   if(t.dataset.wk!=null){ const v=+t.dataset.wk; weekOff=v===0?0:Math.max(-12,Math.min(8,weekOff+v)); renderWeek(); return; }
   if(t.dataset.setftp){ t.disabled=true; db.doc("config/profile").update({ftp:+t.dataset.setftp}).catch(()=>{ t.disabled=false; t.textContent="Couldn't save. Try again"; }); return; }

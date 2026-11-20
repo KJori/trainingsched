@@ -1,0 +1,97 @@
+# Tests the code, builds the Docker image, starts it and checks it works, then publishes it to
+# ghcr.io/kjori/trainingsched so servers can pull it instead of building.
+name: Test and publish image
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm test
+
+  image:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build the image for the smoke test
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: trainingsched:test
+
+      - name: Start it and check that it works
+        run: |
+          set -eux
+          wait_up() { for i in $(seq 1 30); do curl -fs localhost:8080/healthz && return 0; sleep 1; done; docker logs ts; return 1; }
+          docker run -d --name ts -p 8080:8080 -v tsdata:/data trainingsched:test
+          wait_up
+          curl -fs localhost:8080/ | grep -q "<title>Training Week</title>"
+          curl -fs localhost:8080/api/settings | grep -q '"firstRun":true'
+          curl -fs -X PUT localhost:8080/api/settings -H 'content-type: application/json' -d '{"name":"Test","llm":{"provider":"ollama","model":"x"}}' | grep -q "Test's Training Week"
+          curl -fs localhost:8080/api/settings | grep -q '"defaultBase":"http://host.docker.internal:11434/v1"'
+          curl -fs -X PUT localhost:8080/api/db/sessions/s1 -H 'content-type: application/json' -d '{"data":{"date":"2026-11-20","sport":"run","kind":"easy"}}'
+          docker restart ts
+          wait_up
+          curl -fs localhost:8080/api/export | grep -q '"s1"'
+          curl -fs localhost:8080/ | grep -q "Test&#39;s Training Week"
+          docker exec ts stat -c '%a %U' /data/settings.json | grep -q '600 node'
+          docker exec ts stat -c '%U' /data/store.json | grep -q node
+          docker logs ts
+
+      - name: Image names and tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,format=short
+            type=semver,pattern={{version}}
+
+      - uses: docker/login-action@v3
+        if: github.event_name != 'pull_request'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build for amd64 and arm64 and publish
+        if: github.event_name != 'pull_request'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Check that the image can be pulled without logging in
+        if: github.event_name != 'pull_request'
+        continue-on-error: true
+        run: |
+          docker logout ghcr.io
+          if docker manifest inspect "ghcr.io/${GITHUB_REPOSITORY,,}:latest" > /dev/null; then
+            echo "The image is public."
+          else
+            echo "::warning::The image is private, so servers can't pull it without logging in. Make it public once: github.com/${GITHUB_REPOSITORY} → Packages → trainingsched → Package settings → Change visibility → Public."
+            exit 1
+          fi

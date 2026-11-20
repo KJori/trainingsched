@@ -13,6 +13,11 @@ export function startMockLlm({ port = 0, toolInput } = {}) {
       const reply = (obj) => { res.writeHead(200, { "content-type": "application/json" }); res.end(JSON.stringify(obj)); };
       const text = (msgs) => JSON.stringify(msgs);
       const makeInput = (tool, all) => (typeof toolInput === "function" ? toolInput(tool, all) : toolInput || {});
+      if (req.method === "GET" && /\/models(\?|$)/.test(req.url)) {
+        const auth = req.headers["x-api-key"] || req.headers.authorization || "";
+        if (/bad/.test(auth)) { res.writeHead(401, { "content-type": "application/json" }); return res.end(JSON.stringify({ error: { message: "invalid x-api-key" } })); }
+        return reply({ data: [{ id: "model-b" }, { id: "text-embedding-3" }, { id: "models/model-a" }] });
+      }
       if (req.url.endsWith("/messages")) {
         const last = json.messages.at(-1);
         const hasResult = Array.isArray(last?.content) && last.content.some((b) => b.type === "tool_result");
