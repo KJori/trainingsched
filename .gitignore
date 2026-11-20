@@ -1,0 +1,9 @@
+# Training data and secrets never go in this repo.
+.env
+data/
+*.seed.json
+seed.json
+trainingsched-*.json
+exports/
+node_modules/
+.DS_Store

@@ -1,0 +1,12 @@
+{
+  "name": "trainingsched",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Self-hosted training planner and log with an honest AI coach (any LLM provider or local Ollama).",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "node server/server.js",
+    "test": "node --test test/server.test.js"
+  }
+}

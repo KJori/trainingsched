@@ -1,0 +1,1124 @@
+<title>%%TITLE%%</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@500&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+/* Layout: alpine contour band, then the week as seven day columns, then load, checks, log, coaching and the editable structure/goals. */
+:root{
+  --bg:#F1F4F8; --surface:#FFFFFF; --surface-2:#E7ECF2; --ink:#142030; --muted:#58657A; --line:#D2D9E3;
+  --accent:#2C6A8A; --band:#1C2F45; --on-band:#EEF2F7; --band-muted:#A3B4C8;
+  --ride:#2C6A8A; --run:#3B7A4D; --climb:#B06A14; --strength:#76578A; --other:#76838F;
+  --ok:#2A7A4B; --ok-bg:#E1F0E6; --warn:#A86200; --warn-bg:#FAEED6; --crit:#B0271F; --crit-bg:#F8E0DC;
+  --f-display:"Saira Condensed","Arial Narrow",sans-serif;
+  --f-body:"Source Sans 3",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-data:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E141B; --surface:#151E28; --surface-2:#1D2834; --ink:#E2E8EF; --muted:#94A1B2; --line:#283545;
+  --accent:#6EAECF; --band:#101C29; --on-band:#E2E9F1; --band-muted:#8399B1;
+  --ride:#6EAECF; --run:#77BD89; --climb:#E19E4A; --strength:#B793CC; --other:#9AA6B3;
+  --ok:#6CC08C; --ok-bg:#15301F; --warn:#E2A24B; --warn-bg:#33260E; --crit:#EF8A7F; --crit-bg:#3A1916;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E141B; --surface:#151E28; --surface-2:#1D2834; --ink:#E2E8EF; --muted:#94A1B2; --line:#283545;
+  --accent:#6EAECF; --band:#101C29; --on-band:#E2E9F1; --band-muted:#8399B1;
+  --ride:#6EAECF; --run:#77BD89; --climb:#E19E4A; --strength:#B793CC; --other:#9AA6B3;
+  --ok:#6CC08C; --ok-bg:#15301F; --warn:#E2A24B; --warn-bg:#33260E; --crit:#EF8A7F; --crit-bg:#3A1916;
+  color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+*{box-sizing:border-box}
+.wrap{max-width:1080px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--f-display);font-weight:700;letter-spacing:.01em;text-wrap:balance;margin:0;line-height:1.1}
+h2{font-size:1.6rem} h3{font-size:1.15rem}
+.label{font-size:.72rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.num{font-family:var(--f-data);font-variant-numeric:tabular-nums}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.band{background:var(--band);color:var(--on-band);position:relative;overflow:hidden}
+.band .topo{position:absolute;inset:0;width:100%;height:100%;color:var(--on-band);pointer-events:none}
+.band .wrap{padding-block:26px 22px;position:relative;display:grid;gap:16px}
+.bib{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 22px;justify-content:space-between}
+.bib h1{font-size:clamp(2.2rem,7vw,3.4rem);line-height:.95}
+.bib .sub{color:var(--band-muted);font-size:.95rem}
+.goalbox{text-align:right}
+.goalbox .big{font-family:var(--f-display);font-size:2.6rem;line-height:.9;font-weight:700}
+.goalbox .label{color:var(--band-muted)}
+.status{display:inline-flex;gap:8px;align-items:center;font-size:.85rem;color:var(--band-muted)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--band-muted)}
+.dot.live{background:#7FD3A3} .dot.err{background:#F2A29A}
+
+main.wrap{display:grid;gap:22px;padding-block:22px 48px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;min-width:0}
+.panel-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+@media (max-width:820px){.grid-2{grid-template-columns:1fr}}
+
+/* Week */
+.week-hero{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.week-hero h2{font-size:2rem}
+.week-sub{display:flex;flex-wrap:wrap;gap:8px 14px;color:var(--muted);font-size:.95rem;margin:-4px 0 14px}
+.days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}
+@media (max-width:900px){.days{grid-template-columns:1fr}}
+.day{background:var(--surface-2);border-radius:8px;padding:10px;display:grid;gap:8px;align-content:start;border:1px solid transparent;min-width:0}
+.day.today{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--surface-2))}
+.day-h{display:flex;justify-content:space-between;align-items:baseline;gap:6px}
+.day-h b{font-family:var(--f-display);font-size:1.1rem}
+.day-h span{font-size:.75rem;color:var(--muted)}
+.sess{display:grid;gap:2px;padding:7px 8px 7px 10px;border-radius:6px;background:var(--surface);position:relative;font-size:.86rem}
+.sess::before{content:"";position:absolute;left:0;top:6px;bottom:6px;width:3px;border-radius:3px;background:var(--c,var(--other))}
+.sess b{font-size:.9rem}
+.sess .m{color:var(--muted);font-size:.8rem}
+.sess .st{font-size:.68rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.sess.done{background:var(--ok-bg)} .sess.done .st{color:var(--ok)}
+.sess.missed{opacity:.6} .sess.missed .st{color:var(--warn)}
+.sess.swapped{background:var(--warn-bg)} .sess.swapped .st{color:var(--warn)}
+.sess.extra{background:transparent;border:1px dashed var(--line)}
+.sess.opt{background:transparent;border:1px dashed var(--line)} .sess.opt .st{color:var(--muted)}
+.sess .how{color:var(--muted);font-size:.78rem;margin-top:2px}
+.rest{font-size:.85rem;color:var(--muted);padding:6px 2px}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 14px;cursor:pointer;font-weight:600}
+.btn:hover{border-color:var(--accent)}
+a.btn{text-decoration:none;color:inherit}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.btn.ghost{background:transparent}
+.btn.small{padding:3px 9px;font-size:.8rem}
+.btn.danger{color:var(--crit)}
+.btn.danger.armed{background:var(--crit);border-color:var(--crit);color:var(--surface)}
+.btn:disabled{opacity:.5;cursor:default}
+.row-actions{display:flex;flex-wrap:wrap;gap:8px}
+
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media (max-width:640px){.tiles{grid-template-columns:repeat(2,1fr)}}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;display:grid;gap:2px}
+.tile .v{font-family:var(--f-display);font-size:1.9rem;font-weight:700;line-height:1}
+.tile .v small{font-family:var(--f-body);font-size:.85rem;color:var(--muted);font-weight:600}
+.tile .s{font-size:.82rem;color:var(--muted)}
+
+.checks{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.check{display:grid;grid-template-columns:4px 1fr;gap:10px;padding:9px 12px 9px 0;border-radius:8px;background:var(--surface-2)}
+.check::before{content:"";border-radius:4px 0 0 4px;background:var(--muted)}
+.check.ok{background:var(--ok-bg)} .check.ok::before{background:var(--ok)}
+.check.warn{background:var(--warn-bg)} .check.warn::before{background:var(--warn)}
+.check.crit{background:var(--crit-bg)} .check.crit::before{background:var(--crit)}
+.check b{display:block;font-size:.95rem} .check span{font-size:.86rem;color:var(--muted)}
+
+.chart svg{width:100%;height:auto;display:block}
+.chart svg text{font-family:var(--f-data);font-size:10px;fill:var(--muted)}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:.82rem;color:var(--muted);margin-top:6px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+
+.drop{border:2px dashed var(--line);border-radius:var(--r);padding:20px;text-align:center;display:grid;gap:8px;justify-items:center}
+.drop.over{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 7%,transparent)}
+.drop p{margin:0;color:var(--muted);font-size:.9rem;max-width:60ch}
+.drafts{display:grid;gap:12px;margin-top:14px}
+.draft{border:1px solid var(--line);border-radius:var(--r);padding:14px;display:grid;gap:12px;background:var(--surface-2)}
+.draft-head{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap}
+.draft-head .src{font-size:.82rem;color:var(--muted);overflow-wrap:anywhere}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:10px}
+.field{display:grid;gap:4px;min-width:0}
+.field label,.flabel{font-size:.74rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+input[type=text],input[type=number],input[type=date],select,textarea{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:7px;padding:7px 9px;min-width:0}
+textarea{resize:vertical;min-height:58px}
+.wide{grid-column:1/-1}
+.feel{display:flex;gap:6px;flex-wrap:wrap}
+.feel button{border:1px solid var(--line);background:var(--surface);border-radius:7px;padding:5px 10px;cursor:pointer;font-size:.85rem}
+.feel button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.err{color:var(--crit);font-size:.88rem}
+.note{font-size:.86rem;color:var(--muted)}
+
+.tablewrap{overflow-x:auto;margin-inline:-4px}
+table{border-collapse:collapse;width:100%;min-width:760px;font-size:.9rem}
+th{text-align:left;font-size:.72rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:700;padding:8px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+td.n,th.n{text-align:right;font-family:var(--f-data);font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.run{cursor:pointer} tr.run:hover td,tr.run[aria-expanded=true] td{background:var(--surface-2)}
+.chip{display:inline-block;font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 7px;border-radius:999px;white-space:nowrap;color:var(--c);background:color-mix(in srgb,var(--c) 15%,transparent)}
+.niggle{color:var(--crit);font-weight:600}
+.notes-cell{max-width:260px;overflow-wrap:anywhere}
+.detail td{background:var(--surface-2);padding:12px 14px 16px}
+.detail-grid{display:grid;grid-template-columns:1fr 230px;gap:16px}
+@media (max-width:640px){.detail-grid{grid-template-columns:1fr}}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:.88rem;align-content:start;margin:0}
+.kv dt{color:var(--muted)} .kv dd{margin:0;font-family:var(--f-data);font-variant-numeric:tabular-nums}
+.empty{padding:22px;text-align:center;color:var(--muted)}
+
+.coach-out{font-size:.97rem}
+.coach-out p{margin:0 0 .7em} .coach-out ul{margin:0 0 .8em;padding-left:1.2em} .coach-out li{margin-bottom:.3em}
+.coach-meta{font-size:.82rem;color:var(--muted);margin-bottom:10px}
+.thread{display:grid;gap:10px;margin-top:14px}
+.q{justify-self:end;max-width:70%;background:color-mix(in srgb,var(--accent) 14%,var(--surface-2));padding:8px 12px;border-radius:10px 10px 2px 10px;max-width:85%;overflow-wrap:anywhere}
+.a{background:var(--surface-2);padding:10px 12px;border-radius:10px 10px 10px 2px;font-size:.95rem}
+.a p{margin:0 0 .5em} .a p:last-child{margin:0} .a ul{margin:0 0 .5em;padding-left:1.2em}
+.ask{display:grid;gap:6px;margin-top:16px;justify-items:start}
+.ask-row{display:flex;gap:8px;width:100%} .ask-row input{flex:1}
+.sum{background:var(--surface-2);border-radius:8px;padding:8px 12px;font-size:.9rem}
+.sum summary{cursor:pointer;font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.sum[open] summary{margin-bottom:6px}
+.sum p{margin:0 0 .4em} .sum ul{margin:0;padding-left:1.2em} .sum li{margin-bottom:.2em}
+.fb{display:grid;gap:6px;margin-top:10px;padding:10px 12px;border-radius:8px;background:color-mix(in srgb,var(--accent) 8%,var(--surface));border:1px solid color-mix(in srgb,var(--accent) 28%,var(--line))}
+.fb-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.fb-l{font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.fb-t p{margin:0 0 .4em} .fb-t p:last-child{margin:0} .fb-t ul{margin:0 0 .4em;padding-left:1.2em}
+.fb-long{border-top:1px solid var(--line);padding-top:6px}
+.fb-mini{font-size:.82rem;color:var(--muted);margin-top:4px}
+.fb-mini b{color:var(--accent)}
+.fb-recent{display:grid;gap:10px;margin-top:14px}
+
+.tpl{display:grid;gap:8px}
+.tpl-day{display:grid;grid-template-columns:52px 1fr;gap:10px;align-items:start;padding:8px 0;border-bottom:1px solid var(--line)}
+.tpl-day:last-child{border-bottom:0}
+.tpl-day > b{font-family:var(--f-display);font-size:1.05rem;padding-top:6px}
+.tpl-items{display:grid;gap:6px}
+.tpl-item{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 78px auto;gap:6px;align-items:center;padding-bottom:6px}
+.tpl-note{grid-column:1/3}
+.tpl-opt{grid-column:3/5;font-size:.85rem;color:var(--muted);display:flex;gap:6px;align-items:center}
+@media (max-width:520px){.tpl-item{grid-template-columns:1fr 1fr}}
+.adj{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:-4px 0 14px;padding:8px 12px;border-radius:8px;background:color-mix(in srgb,var(--accent) 10%,var(--surface));border:1px solid color-mix(in srgb,var(--accent) 30%,var(--line));font-size:.9rem}
+.adj.next{margin:14px 0 0}
+.prop{display:grid;gap:8px;padding:12px;border-radius:10px;border:1px solid color-mix(in srgb,var(--accent) 40%,var(--line));background:var(--surface)}
+.prop.applied{border-color:var(--ok);background:var(--ok-bg)} .prop.discarded{opacity:.6}
+.prop-sum{margin:0;font-size:.95rem}
+table.diff{min-width:0;font-size:.86rem} table.diff th,table.diff td{padding:5px 8px} table.diff td.was{color:var(--muted)}
+.ok-t{color:var(--ok);font-weight:700;font-size:.85rem}
+table.zones{min-width:0;font-size:.88rem} table.zones td{font-family:var(--f-data);font-variant-numeric:tabular-nums}
+.goals{display:grid;gap:8px;margin:0 0 12px;padding:0;list-style:none}
+.goal{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:8px;background:var(--surface-2)}
+.goal b{display:block}
+.goal span{font-size:.85rem;color:var(--muted)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.tabs-bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+.tabs{display:flex;gap:2px;overflow-x:auto}
+.tabs a{font-family:var(--f-display);font-size:1.15rem;font-weight:700;letter-spacing:.02em;color:var(--muted);text-decoration:none;padding:11px 14px 8px;border-bottom:3px solid transparent;white-space:nowrap;display:inline-flex;gap:6px;align-items:center}
+.tabs a:hover{color:var(--ink)}
+.tabs a.on{color:var(--ink);border-bottom-color:var(--accent)}
+.badge{font-family:var(--f-body);font-size:.7rem;font-weight:700;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--warn);color:var(--surface);display:inline-grid;place-items:center}
+.view{display:grid;gap:22px;min-width:0}
+.wknav{display:flex;gap:6px;align-items:center}
+.cyc{display:inline-flex;align-items:center;gap:5px;font-size:.76rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--accent)}
+.cyc i{display:inline-block;width:14px;height:6px;border-radius:3px;background:var(--line)} .cyc i.on{background:var(--accent)} .cyc i.rec.on{background:var(--ok)}
+.cyc b{margin-left:4px;font-weight:700}
+.nextline{margin-top:14px;font-size:.9rem;color:var(--muted)}
+table.prog{min-width:520px;font-size:.9rem} table.prog tr.cur td,table.prog tr.cur th{background:color-mix(in srgb,var(--accent) 9%,transparent)}
+.ladder{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 0}
+.ladder span{font-family:var(--f-data);font-size:.8rem;padding:3px 9px;border-radius:999px;background:var(--surface-2);color:var(--muted)}
+.ladder span.done{color:var(--ok)} .ladder span.cur{background:var(--accent);color:var(--surface)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<header class="band">
+  <svg class="topo" viewBox="0 0 1200 360" preserveAspectRatio="xMaxYMid slice" aria-hidden="true"><path d="M1200,299 L1197,300 L1192,301 L1190,302 L1185,305 L1182,306 L1180,308 L1177,310 L1175,312 L1172,316 L1170,320 L1168,322 L1165,325 L1162,327 L1160,328 L1156,330 L1152,331 L1147,332 L1145,332 L1140,333 L1135,333 L1130,333 L1125,334 L1120,334 L1115,334 L1110,334 L1105,333 L1100,333 L1095,333 L1090,333 L1085,332 L1082,332 L1077,331 L1072,331 L1067,330 L1065,329 L1060,328 L1055,328 L1052,327 L1047,326 L1042,326 L1037,325 L1035,325 L1030,324 L1025,324 L1020,323 L1015,323 L1010,322 L1007,322 L1002,321 L997,320 L995,319 L990,318 L987,317 L982,315 L980,313 L977,312 L974,310 L971,307 L968,305 L965,302 L962,300 L959,298 L957,296 L954,295 L949,293 L947,292 L942,290 L937,290 L932,290 L927,290 L922,291 L917,292 L914,293 L910,295 L907,296 L904,297 L900,300 L897,301 L894,303 L891,305 L887,307 L884,309 L882,311 L879,312 L876,315 L873,317 L869,320 L867,321 L864,323 L862,325 L859,327 L855,330 L852,332 L849,334 L847,335 L843,337 L839,340 L837,341 L834,343 L831,345 L828,347 L824,350 L822,352 L819,354 L817,355 L814,357 L811,360 M644,360 L642,357 L639,356 L636,354 L633,352 L629,350 L626,349 L623,347 L619,345 L616,344 L614,342 L611,340 L608,337 L606,335 L604,332 L601,329 L599,325 L598,322 L596,317 L595,315 L594,311 L591,307 L589,305 L588,302 L586,299 L586,295 L586,290 L587,287 L588,282 L588,277 L587,272 L587,267 L588,262 L589,259 L590,254 L591,251 L592,247 L594,243 L595,239 L596,236 L598,232 L598,227 L597,222 L596,219 L594,214 L594,209 L596,205 L599,201 L601,199 L603,196 L606,194 L609,191 L611,189 L614,186 L616,184 L619,181 L620,179 L620,174 L617,171 L614,169 L611,168 L609,166 L605,164 L601,161 L599,160 L596,158 L593,156 L589,154 L586,152 L584,150 L581,148 L578,146 L575,143 L572,141 L570,138 L567,136 L565,133 L563,131 L560,128 L557,126 L555,123 L553,121 L550,118 L548,116 L546,112 L544,108 L544,106 L543,101 L543,96 L544,93 L545,88 L546,85 L546,81 L546,78 L544,74 L542,70 L541,68 L539,63 L539,58 L541,53 L542,50 L544,46 L544,43 L544,38 L543,35 L541,32 L539,29 L537,25 L536,23 L535,18 L535,13 L536,10 L539,5 L540,3 M1200,256 L1198,259 L1198,264 L1197,267 L1196,272 L1195,275 L1193,279 L1191,282 L1189,284 L1186,287 L1183,290 L1180,292 L1177,293 L1175,295 L1171,297 L1167,299 L1165,301 L1162,302 L1158,305 L1155,307 L1152,309 L1150,311 L1147,313 L1145,315 L1141,317 L1137,319 L1135,320 L1130,321 L1126,322 L1122,323 L1117,323 L1112,324 L1107,324 L1102,324 L1097,324 L1092,323 L1087,323 L1082,322 L1080,322 L1075,321 L1070,320 L1067,320 L1062,319 L1057,318 L1052,317 L1050,317 L1045,317 L1040,316 L1035,316 L1030,316 L1025,316 L1020,315 L1015,315 L1012,314 L1007,313 L1002,312 L1000,311 L996,310 L992,308 L990,306 L987,305 L983,302 L980,300 L977,298 L975,296 L972,294 L969,292 L965,290 L962,288 L959,287 L954,285 L952,284 L947,283 L942,282 L939,282 L934,281 L929,281 L924,281 L920,282 L917,283 L912,284 L909,286 L907,287 L902,290 L899,291 L897,293 L894,295 L890,297 L887,299 L884,300 L882,302 L878,305 L874,307 L872,309 L869,310 L867,312 L863,315 L859,317 L857,318 L854,320 L850,322 L847,324 L844,326 L842,327 L837,330 L834,332 L832,333 L828,335 L824,337 L822,338 L819,340 L814,342 L812,344 L809,345 L804,347 L802,348 L798,350 L794,351 L789,352 L787,353 L782,354 L777,354 L772,355 L768,355 L764,355 L759,356 L754,356 L749,357 L744,357 L739,357 L734,357 L729,357 L724,357 L719,357 L714,357 L709,357 L704,357 L699,357 L694,357 L689,357 L684,357 L679,356 L676,355 L671,354 L667,352 L664,351 L661,350 L656,348 L654,347 L650,345 L646,343 L644,342 L639,340 L636,338 L634,337 L631,335 L628,332 L625,330 L624,327 L622,322 L623,317 L623,312 L621,307 L620,305 L619,302 L616,298 L615,295 L614,292 L613,287 L611,282 L610,279 L609,276 L607,272 L606,269 L606,264 L606,260 L607,257 L609,253 L610,249 L611,247 L613,242 L614,239 L615,234 L616,229 L615,224 L614,220 L613,217 L612,211 L614,207 L616,204 L618,201 L620,199 L623,196 L625,194 L628,191 L630,189 L632,186 L634,184 L636,180 L639,176 L639,174 L639,171 L636,169 L631,166 L629,165 L626,163 L622,161 L619,159 L616,157 L614,156 L610,154 L606,151 L604,150 L601,148 L598,146 L595,143 L591,141 L589,139 L586,136 L584,134 L581,131 L579,129 L576,126 L574,123 L571,121 L569,119 L566,116 L564,113 L562,111 L561,108 L559,103 L559,98 L561,93 L561,91 L562,86 L562,81 L561,78 L559,74 L557,70 L555,68 L554,64 L553,60 L554,55 L555,53 L556,50 L558,45 L559,43 L559,38 L558,35 L556,32 L554,28 L552,25 L551,21 L551,18 L551,15 L554,10 L556,8 L558,5 L559,3 M1200,214 L1197,215 L1193,217 L1190,218 L1187,219 L1184,222 L1182,224 L1180,228 L1177,231 L1175,233 L1172,234 L1168,237 L1165,239 L1162,240 L1160,242 L1157,244 L1154,247 L1152,249 L1150,252 L1147,255 L1145,258 L1142,261 L1140,263 L1137,265 L1135,267 L1132,269 L1129,272 L1125,274 L1122,277 L1120,278 L1117,280 L1115,282 L1111,284 L1108,287 L1105,289 L1102,291 L1100,292 L1095,295 L1092,296 L1087,297 L1085,297 L1080,298 L1075,298 L1070,297 L1065,297 L1062,297 L1057,296 L1052,295 L1047,295 L1045,294 L1040,293 L1035,292 L1032,291 L1027,290 L1025,289 L1020,288 L1017,287 L1012,285 L1009,284 L1005,283 L1000,282 L997,281 L992,280 L990,279 L985,277 L982,277 L977,275 L975,274 L970,272 L967,271 L962,269 L959,268 L956,267 L952,265 L949,264 L946,262 L942,260 L939,258 L936,257 L932,255 L929,254 L924,253 L919,252 L914,253 L910,254 L907,256 L904,258 L902,260 L899,262 L897,265 L894,268 L892,271 L889,274 L887,277 L884,279 L882,282 L879,284 L877,286 L874,288 L872,290 L869,292 L866,295 L862,297 L859,299 L857,301 L854,302 L851,305 L847,307 L844,308 L840,310 L837,311 L834,312 L829,314 L826,315 L822,316 L819,317 L814,319 L812,320 L807,322 L804,323 L799,324 L796,325 L792,326 L787,326 L782,327 L777,327 L772,327 L769,327 L764,327 L759,328 L754,328 L749,328 L744,328 L739,327 L737,327 L732,327 L727,326 L722,326 L716,326 L711,326 L706,326 L701,325 L696,325 L692,325 L689,324 L684,323 L681,322 L677,320 L674,317 L672,315 L670,312 L668,310 L666,307 L664,303 L662,300 L661,297 L659,292 L658,290 L656,287 L654,282 L653,279 L652,274 L654,269 L655,267 L657,264 L659,260 L660,257 L659,254 L657,249 L655,247 L654,243 L653,239 L652,234 L652,229 L653,224 L654,219 L654,217 L655,211 L656,208 L658,204 L659,201 L661,197 L663,194 L665,191 L667,189 L669,185 L671,182 L673,179 L674,176 L676,171 L677,169 L678,164 L678,159 L674,156 L671,156 L666,155 L662,154 L659,153 L655,151 L651,150 L649,148 L645,146 L641,144 L639,142 L636,141 L633,138 L629,136 L626,135 L624,133 L620,131 L616,128 L614,126 L611,124 L609,122 L606,119 L604,116 L601,113 L599,111 L598,108 L596,106 L594,101 L593,98 L592,93 L592,88 L591,84 L590,81 L589,77 L587,73 L585,70 L583,68 L581,64 L581,60 L581,57 L583,53 L584,50 L586,45 L586,43 L586,40 L585,35 L584,33 L581,28 L580,25 L580,20 L581,15 L582,13 L584,9 L586,5 L588,3 M987,0 L987,5 L987,10 L987,15 L988,18 L992,18 L993,15 L993,10 L993,5 L993,0 M1200,177 L1196,179 L1192,181 L1190,184 L1188,186 L1186,189 L1185,191 L1182,195 L1180,198 L1177,200 L1175,202 L1172,204 L1167,205 L1163,206 L1160,208 L1157,209 L1155,212 L1152,216 L1150,218 L1147,220 L1145,222 L1141,224 L1137,227 L1135,228 L1132,230 L1130,233 L1127,237 L1127,239 L1126,244 L1125,249 L1124,252 L1122,254 L1120,257 L1116,259 L1112,261 L1110,262 L1105,264 L1102,265 L1097,266 L1094,267 L1090,268 L1085,269 L1081,269 L1077,270 L1072,271 L1069,272 L1065,273 L1060,274 L1055,274 L1051,274 L1047,275 L1042,275 L1037,275 L1033,274 L1030,274 L1025,274 L1020,274 L1015,273 L1010,273 L1005,272 L1002,272 L997,271 L992,270 L990,269 L985,268 L982,267 L977,265 L975,264 L970,262 L967,261 L965,259 L960,257 L957,255 L954,253 L951,252 L947,249 L944,248 L942,247 L937,244 L934,243 L932,242 L927,240 L924,239 L919,238 L914,237 L909,238 L906,239 L902,241 L899,243 L897,246 L894,249 L892,252 L890,254 L888,257 L886,259 L884,262 L882,265 L879,268 L877,272 L874,274 L872,277 L869,279 L867,282 L864,284 L862,286 L859,287 L856,290 L853,292 L849,294 L847,296 L844,298 L841,300 L837,301 L834,302 L829,304 L827,305 L822,306 L819,307 L814,308 L809,309 L806,310 L802,310 L797,311 L792,312 L789,312 L784,313 L779,313 L774,313 L769,313 L764,312 L762,312 L757,312 L752,311 L747,311 L742,310 L737,310 L734,309 L729,309 L724,309 L719,309 L714,309 L709,309 L704,308 L699,307 L696,307 L692,305 L689,302 L687,300 L685,297 L684,294 L681,290 L679,287 L678,284 L676,282 L676,277 L677,274 L679,271 L681,268 L684,265 L686,262 L688,259 L688,254 L686,251 L684,247 L682,244 L680,242 L678,239 L676,234 L676,232 L676,227 L677,224 L677,219 L677,214 L676,209 L677,204 L679,199 L680,196 L682,194 L684,190 L686,187 L688,184 L690,181 L691,179 L694,174 L695,171 L696,166 L697,164 L698,159 L699,154 L700,151 L699,147 L694,146 L691,146 L686,146 L681,145 L676,145 L672,143 L669,143 L665,141 L661,139 L659,137 L656,136 L652,133 L649,132 L646,130 L643,128 L639,126 L636,125 L634,123 L630,121 L626,118 L624,116 L621,114 L619,112 L616,109 L614,106 L612,103 L611,101 L609,96 L608,93 L607,88 L606,83 L605,81 L604,77 L601,74 L599,70 L597,68 L596,65 L595,60 L596,56 L598,53 L599,50 L601,45 L600,40 L599,37 L597,33 L596,30 L594,25 L594,23 L594,18 L594,15 L596,10 L598,8 L599,5 L600,0 M766,0 L767,3 L769,6 L772,9 L774,13 L776,15 L778,18 L779,20 L782,23 L784,26 L787,29 L792,29 L794,25 L794,23 L795,18 L796,13 L796,8 L797,5 L797,0 M976,0 L976,5 L976,10 L976,15 L977,20 L978,23 L980,28 L981,30 L982,33 L985,37 L987,40 L989,43 L991,43 L993,40 L995,38 L997,35 L1000,33 L1002,30 L1006,28 L1008,25 L1010,23 L1012,19 L1013,15 L1012,11 L1011,8 L1011,3 M1200,167 L1195,168 L1191,169 L1187,170 L1182,171 L1180,171 L1175,173 L1172,174 L1167,176 L1165,177 L1162,179 L1160,181 L1156,184 L1153,186 L1150,188 L1147,189 L1142,190 L1137,191 L1135,191 L1130,194 L1128,196 L1127,199 L1125,204 L1124,206 L1123,211 L1121,214 L1120,217 L1117,219 L1115,222 L1112,224 L1110,227 L1107,229 L1104,232 L1102,234 L1100,237 L1097,240 L1095,244 L1093,247 L1091,249 L1087,251 L1085,252 L1080,254 L1077,254 L1072,255 L1067,256 L1065,257 L1060,258 L1055,259 L1051,259 L1047,260 L1042,260 L1037,261 L1032,261 L1027,262 L1022,262 L1017,262 L1012,261 L1007,261 L1002,260 L998,259 L995,258 L991,257 L987,255 L985,254 L981,252 L977,250 L975,249 L970,247 L967,245 L964,244 L959,242 L957,241 L952,239 L949,238 L946,237 L942,235 L939,233 L936,232 L932,229 L929,228 L926,227 L922,225 L917,224 L914,224 L909,224 L907,224 L902,226 L899,227 L896,229 L893,232 L890,234 L888,237 L886,239 L884,242 L882,244 L879,248 L877,251 L875,254 L873,257 L871,259 L869,262 L867,266 L864,269 L862,272 L859,274 L857,277 L854,278 L852,280 L848,282 L844,284 L842,285 L837,287 L834,288 L830,290 L827,290 L822,292 L819,293 L814,294 L811,295 L807,295 L802,296 L797,297 L794,298 L789,298 L784,299 L779,299 L774,299 L769,298 L764,298 L761,297 L757,296 L752,295 L749,294 L745,292 L742,291 L737,290 L734,289 L729,288 L725,287 L722,286 L716,285 L714,284 L709,283 L706,282 L703,279 L701,277 L701,272 L703,269 L705,267 L707,264 L709,261 L710,257 L710,252 L709,249 L706,245 L704,242 L703,239 L701,235 L700,232 L699,227 L699,224 L697,219 L696,217 L695,211 L694,206 L695,201 L696,197 L698,194 L700,191 L701,188 L704,185 L706,181 L708,179 L709,176 L711,171 L712,169 L714,164 L715,161 L717,159 L719,154 L721,151 L722,149 L724,146 L727,142 L729,138 L730,136 L732,133 L734,131 L737,128 L739,126 L742,122 L742,119 L737,120 L734,121 L729,123 L727,124 L722,125 L719,126 L714,127 L709,128 L706,128 L701,129 L696,129 L691,129 L686,129 L684,128 L679,127 L674,126 L671,125 L666,123 L664,123 L659,121 L656,120 L653,118 L649,116 L646,115 L643,113 L639,111 L636,109 L634,106 L631,104 L629,101 L628,98 L627,93 L626,91 L625,86 L624,83 L621,79 L619,76 L616,73 L614,70 L612,68 L611,65 L610,60 L611,57 L613,53 L615,50 L616,45 L616,40 L614,36 L612,33 L611,30 L609,25 L609,22 L609,18 L609,15 L610,10 L611,6 L612,3 M789,55 L787,58 L786,60 L784,63 L782,66 L779,69 L777,72 L774,75 L772,78 L770,81 L769,83 L769,88 L769,91 L772,95 L777,94 L779,92 L782,91 L786,88 L789,86 L792,83 L794,81 L796,78 L797,76 L798,70 L798,65 L797,62 L795,58 L794,55 L789,55 M750,0 L752,4 L754,7 L756,10 L758,13 L759,15 L762,20 L763,23 L765,25 L767,28 L769,32 L771,35 L772,38 L772,43 L772,46 L769,50 L768,53 L767,57 L765,60 L764,63 L762,67 L759,70 L757,72 L754,75 L752,78 L750,81 L749,83 L748,88 L749,93 L747,98 L745,101 L742,103 L739,105 L737,106 L732,108 L729,109 L724,110 L722,111 L716,112 L711,113 L707,113 L704,114 L699,114 L694,114 L689,114 L686,113 L681,113 L676,112 L672,111 L669,110 L664,108 L661,107 L659,106 L655,103 L652,101 L650,98 L649,95 L648,91 L646,87 L644,83 L641,81 L639,78 L636,76 L634,74 L631,72 L629,69 L626,66 L625,63 L626,58 L627,55 L629,52 L631,48 L632,45 L633,40 L632,35 L631,32 L630,28 L629,25 L628,20 L627,15 L626,10 L626,10 L627,5 L628,0 M965,0 L965,5 L966,10 L966,15 L967,20 L968,23 L969,28 L970,30 L972,35 L973,38 L975,42 L976,45 L977,50 L978,53 L979,58 L980,60 L982,63 L985,66 L987,69 L990,70 L994,73 L997,74 L1000,76 L1005,78 L1007,79 L1010,81 L1015,83 L1017,84 L1020,86 L1022,88 L1025,91 L1027,93 L1030,96 L1032,98 L1036,101 L1038,101 L1037,97 L1035,94 L1032,92 L1030,90 L1027,88 L1024,86 L1022,83 L1020,80 L1017,76 L1016,73 L1015,70 L1013,65 L1012,60 L1012,58 L1010,53 L1010,50 L1009,45 L1010,43 L1012,39 L1015,36 L1017,34 L1020,32 L1022,30 L1025,28 L1028,25 L1030,22 L1031,18 L1030,13 L1030,10 L1028,5 L1028,0 M1200,158 L1197,159 L1192,160 L1187,161 L1185,161 L1180,162 L1175,163 L1170,163 L1166,164 L1162,164 L1157,165 L1152,166 L1150,166 L1145,167 L1140,168 L1137,169 L1132,171 L1130,171 L1125,173 L1120,173 L1117,174 L1112,174 L1107,176 L1106,179 L1104,181 L1102,185 L1100,189 L1099,191 L1098,196 L1099,201 L1100,204 L1100,209 L1100,212 L1098,217 L1096,219 L1093,222 L1090,224 L1087,225 L1085,227 L1080,229 L1077,230 L1072,231 L1070,232 L1065,233 L1060,233 L1055,234 L1050,234 L1047,234 L1042,234 L1037,234 L1032,234 L1027,234 L1022,234 L1017,234 L1012,235 L1007,235 L1002,235 L997,235 L992,235 L987,235 L982,235 L977,234 L975,234 L970,233 L965,232 L962,231 L957,229 L954,228 L951,227 L947,225 L944,224 L939,222 L937,221 L933,219 L929,218 L925,217 L922,216 L917,215 L912,215 L907,215 L902,216 L899,217 L894,219 L892,220 L889,222 L886,224 L883,227 L880,229 L877,232 L875,234 L872,237 L870,239 L867,242 L865,244 L863,247 L860,249 L858,252 L857,254 L854,258 L852,262 L850,264 L849,267 L846,269 L843,272 L839,274 L837,275 L832,276 L829,277 L824,278 L819,279 L814,279 L810,279 L807,280 L802,280 L797,280 L792,280 L787,280 L784,279 L779,278 L774,277 L772,276 L769,274 L765,272 L762,270 L759,268 L757,266 L754,264 L751,262 L748,259 L744,257 L742,255 L739,253 L737,251 L734,249 L732,246 L729,243 L727,239 L726,237 L724,232 L723,229 L722,226 L719,223 L716,219 L714,217 L713,214 L711,211 L710,206 L710,201 L711,198 L713,194 L715,191 L717,189 L719,186 L722,183 L724,179 L726,176 L727,174 L729,170 L731,166 L732,164 L734,161 L737,157 L739,154 L740,151 L742,149 L744,143 L745,141 L747,138 L749,134 L751,131 L754,128 L757,126 L759,124 L762,122 L764,120 L767,118 L769,116 L772,113 L774,111 L777,108 L779,105 L782,103 L784,101 L787,98 L791,96 L794,93 L797,91 L799,89 L802,86 L804,83 L806,81 L807,78 L809,73 L810,70 L809,65 L809,63 L807,58 L806,55 L804,52 L802,48 L802,45 L801,40 L801,35 L802,31 L803,28 L804,23 L805,20 L805,15 L806,10 L807,6 L807,3 M935,0 L937,4 L939,8 L940,10 L942,15 L943,18 L944,22 L946,25 L947,28 L949,33 L951,35 L952,38 L954,43 L955,45 L957,50 L958,53 L958,58 L958,63 L958,68 L959,73 L960,76 L962,78 L965,81 L968,83 L972,85 L975,86 L980,88 L982,88 L987,90 L990,91 L993,93 L997,95 L1000,97 L1002,99 L1005,102 L1007,105 L1010,108 L1012,111 L1015,113 L1017,116 L1020,118 L1022,120 L1025,122 L1027,124 L1031,126 L1035,128 L1037,130 L1040,131 L1043,133 L1047,136 L1050,138 L1052,141 L1054,143 L1055,146 L1057,151 L1057,154 L1058,159 L1058,164 L1057,166 L1055,169 L1051,171 L1047,173 L1045,174 L1040,176 L1037,178 L1035,181 L1034,184 L1035,187 L1037,191 L1040,194 L1042,196 L1043,199 L1042,202 L1040,204 L1035,206 L1031,206 L1027,207 L1022,207 L1017,207 L1015,206 L1010,206 L1005,206 L1000,205 L995,205 L990,205 L985,205 L980,205 L975,206 L970,206 L965,206 L960,206 L957,206 L954,206 L949,206 L944,205 L939,205 L936,204 L932,203 L927,202 L924,201 L919,200 L914,199 L909,200 L904,201 L902,201 L897,203 L894,204 L889,206 L887,207 L883,209 L879,211 L877,212 L872,214 L869,215 L866,217 L862,218 L859,219 L854,221 L852,222 L847,223 L842,224 L839,224 L834,225 L829,226 L824,226 L819,226 L814,226 L809,226 L804,225 L801,224 L797,223 L793,222 L789,220 L786,219 L782,218 L778,217 L774,215 L769,214 L767,213 L762,212 L759,211 L755,209 L752,207 L750,204 L751,199 L753,196 L755,194 L758,191 L761,189 L763,186 L765,184 L767,181 L769,179 L772,174 L773,171 L774,168 L776,164 L777,161 L779,156 L780,154 L782,149 L782,146 L782,141 L783,136 L785,133 L787,131 L789,128 L792,126 L795,123 L798,121 L800,118 L803,116 L805,113 L807,111 L809,108 L812,105 L814,102 L817,99 L819,96 L821,93 L823,91 L824,87 L826,83 L827,81 L829,76 L830,73 L831,68 L831,63 L829,58 L828,55 L827,53 L824,48 L823,45 L822,43 L821,38 L821,33 L822,30 L824,26 L826,23 L827,20 L829,16 L831,13 L832,10 L833,5 L834,2 M1169,0 L1170,5 L1170,8 L1170,13 L1170,18 L1172,23 L1175,25 L1177,28 L1180,29 L1182,31 L1186,33 L1189,35 L1192,38 L1195,40 L1196,43 L1196,48 L1194,50 L1192,53 L1189,55 L1186,58 L1183,60 L1181,63 L1179,65 L1177,68 L1176,73 L1176,78 L1177,81 L1180,85 L1182,88 L1183,91 L1185,96 L1185,98 L1185,101 L1185,106 L1184,111 L1183,116 L1182,118 L1180,121 L1177,124 L1175,126 L1171,128 L1167,130 L1165,131 L1160,133 L1157,135 L1154,136 L1150,137 L1146,138 L1142,139 L1137,140 L1132,141 L1130,141 L1125,142 L1120,142 L1115,141 L1110,141 L1107,141 L1102,140 L1098,138 L1095,137 L1092,136 L1088,133 L1085,131 L1083,128 L1082,126 L1080,121 L1079,118 L1079,113 L1079,108 L1079,103 L1077,98 L1076,96 L1075,93 L1072,91 L1070,88 L1066,86 L1063,83 L1060,81 L1057,79 L1055,77 L1052,74 L1050,70 L1049,68 L1048,63 L1048,58 L1048,53 L1049,48 L1050,45 L1052,42 L1055,39 L1057,36 L1060,33 L1062,30 L1064,28 L1066,25 L1068,23 L1071,20 L1073,18 L1075,15 L1079,13 L1082,11 L1085,10 L1090,8 L1093,8 L1097,6 L1102,5 L1105,5 L1110,3 L1112,1 M699,5 L704,4 L709,5 L711,6 L716,8 L719,9 L722,11 L724,13 L727,16 L729,20 L730,23 L731,28 L731,33 L730,38 L728,40 L727,43 L724,47 L723,50 L722,53 L721,58 L720,63 L719,66 L717,70 L715,73 L713,76 L710,78 L707,81 L704,82 L701,83 L696,84 L693,83 L689,82 L686,81 L681,79 L679,77 L676,76 L671,73 L669,72 L666,70 L663,68 L660,65 L659,63 L658,58 L659,55 L661,51 L664,48 L665,45 L667,43 L669,39 L671,35 L671,33 L673,28 L674,25 L676,20 L678,18 L680,15 L682,13 L685,10 L689,8 L691,7 L696,5 L699,5 M909,0 L911,3 L914,5 L917,7 L919,9 L922,11 L924,14 L927,17 L929,20 L930,23 L932,25 L934,29 L937,32 L939,35 L941,38 L943,40 L944,43 L947,48 L948,50 L949,55 L949,60 L949,65 L949,70 L949,76 L949,78 L952,83 L954,86 L957,87 L959,89 L964,91 L967,92 L970,93 L975,95 L977,96 L982,98 L985,100 L987,101 L990,103 L992,106 L995,108 L997,111 L1000,114 L1002,117 L1005,120 L1007,123 L1009,126 L1010,128 L1012,132 L1014,136 L1015,138 L1016,143 L1015,149 L1015,151 L1013,156 L1012,160 L1010,164 L1008,166 L1006,169 L1004,171 L1001,174 L998,176 L996,179 L993,181 L990,184 L987,185 L985,187 L980,189 L977,190 L972,191 L970,192 L965,193 L960,194 L957,194 L952,194 L947,194 L944,194 L939,193 L935,191 L932,190 L929,189 L924,187 L922,186 L917,185 L912,186 L909,187 L906,189 L903,191 L899,194 L897,195 L894,197 L890,199 L887,201 L884,202 L880,204 L877,205 L873,206 L869,208 L867,209 L862,210 L858,211 L854,212 L849,213 L844,214 L839,214 L834,214 L829,213 L824,213 L819,212 L817,211 L812,210 L808,209 L804,208 L801,206 L797,205 L794,203 L790,201 L788,199 L786,196 L785,191 L787,187 L788,184 L790,181 L792,178 L793,174 L794,171 L795,166 L796,161 L797,159 L798,154 L799,151 L801,146 L801,141 L802,138 L804,133 L806,131 L808,128 L811,126 L813,123 L816,121 L818,118 L820,116 L822,113 L824,109 L826,106 L828,103 L829,101 L832,96 L833,93 L834,89 L835,86 L837,81 L838,78 L839,74 L840,70 L841,65 L841,60 L840,55 L838,53 L837,50 L834,45 L833,43 L833,38 L834,33 L835,30 L837,27 L839,24 L842,21 L844,19 L847,16 L849,13 L852,10 L854,8 L855,5 L857,3 M1125,15 L1130,14 L1135,13 L1140,14 L1142,17 L1144,20 L1146,23 L1148,25 L1151,28 L1154,30 L1157,32 L1160,34 L1163,35 L1167,38 L1170,39 L1172,41 L1175,45 L1176,48 L1175,50 L1172,54 L1170,58 L1167,60 L1165,63 L1163,65 L1161,68 L1160,70 L1158,76 L1159,81 L1160,84 L1162,88 L1163,91 L1165,96 L1164,101 L1163,106 L1162,108 L1160,112 L1157,115 L1155,117 L1152,119 L1149,121 L1145,122 L1142,123 L1137,124 L1132,125 L1127,125 L1122,124 L1118,123 L1115,122 L1112,120 L1110,118 L1107,116 L1105,113 L1102,110 L1100,106 L1098,103 L1096,101 L1094,98 L1092,95 L1090,92 L1087,90 L1085,88 L1082,85 L1079,83 L1076,81 L1073,78 L1070,76 L1068,73 L1066,70 L1065,67 L1064,63 L1064,58 L1065,53 L1065,50 L1067,47 L1070,43 L1072,40 L1074,38 L1076,35 L1079,33 L1082,30 L1085,28 L1087,26 L1090,25 L1095,23 L1097,22 L1102,20 L1105,19 L1110,18 L1113,18 L1117,17 L1122,16 L1125,15 M696,25 L701,24 L706,25 L709,27 L711,30 L712,33 L711,36 L710,40 L709,43 L706,47 L704,49 L701,51 L699,53 L694,54 L690,53 L689,50 L687,45 L687,40 L688,35 L689,33 L691,29 L694,27 L696,25 M879,14 L884,14 L889,13 L894,14 L899,15 L902,16 L905,18 L909,20 L912,22 L914,25 L917,27 L919,30 L922,33 L924,35 L927,38 L929,40 L932,43 L934,45 L936,48 L937,50 L939,55 L940,58 L940,63 L940,68 L940,73 L940,78 L940,83 L942,88 L944,91 L947,93 L949,95 L952,96 L956,98 L959,100 L962,101 L967,103 L970,105 L972,106 L976,108 L979,111 L982,113 L985,115 L987,118 L990,121 L991,123 L992,128 L991,133 L989,136 L987,139 L985,142 L982,145 L980,148 L977,151 L975,154 L974,156 L972,161 L971,164 L970,167 L967,169 L964,171 L959,173 L957,174 L952,175 L947,175 L942,175 L937,174 L932,174 L929,173 L924,172 L922,171 L917,170 L913,169 L909,169 L907,169 L904,171 L902,174 L899,178 L897,181 L895,184 L893,186 L891,189 L888,191 L884,194 L882,195 L879,197 L875,199 L872,200 L869,201 L864,203 L860,204 L857,205 L852,205 L847,206 L842,206 L837,205 L832,205 L828,204 L824,203 L821,201 L817,199 L814,198 L812,196 L809,192 L808,189 L809,184 L810,181 L812,176 L812,174 L813,169 L814,164 L814,159 L815,156 L816,151 L817,147 L818,143 L819,140 L822,136 L823,133 L826,131 L828,128 L831,126 L833,123 L835,121 L837,118 L839,113 L840,111 L842,106 L842,103 L844,98 L844,93 L844,91 L845,86 L847,81 L848,78 L849,74 L851,70 L852,68 L853,63 L853,58 L852,54 L850,50 L849,48 L848,43 L848,38 L849,33 L851,30 L854,28 L857,25 L859,24 L862,22 L865,20 L869,18 L872,17 L877,15 L879,14 M1105,33 L1110,32 L1115,31 L1120,32 L1125,32 L1127,33 L1132,34 L1135,35 L1140,37 L1142,38 L1146,40 L1150,43 L1152,45 L1155,48 L1156,50 L1155,55 L1154,58 L1152,60 L1150,63 L1147,66 L1145,69 L1142,72 L1140,76 L1139,78 L1139,83 L1139,88 L1137,93 L1135,95 L1132,97 L1127,97 L1122,97 L1118,96 L1115,94 L1112,93 L1108,91 L1105,88 L1102,87 L1100,85 L1097,83 L1094,81 L1090,78 L1087,76 L1085,73 L1083,70 L1081,68 L1080,64 L1079,60 L1080,55 L1080,53 L1082,49 L1085,45 L1087,43 L1090,40 L1092,38 L1095,37 L1098,35 L1102,33 L1105,33 M879,33 L884,32 L889,32 L894,33 L897,34 L899,35 L904,38 L907,39 L909,41 L913,43 L917,45 L919,47 L922,49 L924,52 L927,55 L928,58 L929,61 L930,65 L931,70 L931,76 L931,81 L931,86 L931,91 L932,95 L934,98 L937,101 L939,103 L942,104 L946,106 L949,107 L952,109 L957,111 L959,112 L962,114 L966,116 L970,118 L972,121 L974,123 L975,126 L974,128 L972,133 L970,136 L967,138 L965,140 L962,142 L959,144 L957,146 L953,149 L949,151 L947,153 L944,154 L941,156 L937,157 L932,158 L927,158 L922,157 L919,156 L914,154 L912,153 L907,152 L902,153 L899,154 L896,156 L894,159 L892,161 L890,166 L889,170 L888,174 L887,176 L884,180 L882,183 L879,185 L877,188 L874,189 L871,191 L867,193 L864,194 L859,195 L854,196 L852,196 L849,196 L844,196 L839,194 L837,193 L834,191 L832,187 L831,184 L831,179 L832,175 L832,171 L833,166 L834,161 L834,159 L834,156 L834,151 L834,147 L835,143 L837,140 L839,137 L842,134 L844,131 L847,129 L849,126 L852,123 L853,121 L855,118 L857,114 L858,111 L858,106 L857,101 L857,98 L855,93 L855,88 L856,83 L857,81 L859,76 L861,73 L863,70 L865,68 L867,63 L868,60 L868,55 L868,50 L868,45 L869,41 L872,38 L874,35 L877,34 L879,33 M1112,43 L1117,42 L1122,43 L1125,43 L1130,45 L1132,46 L1135,48 L1137,51 L1138,55 L1137,59 L1135,63 L1132,65 L1130,68 L1127,70 L1125,71 L1121,73 L1117,74 L1112,73 L1110,73 L1105,70 L1102,68 L1100,66 L1098,63 L1097,60 L1097,55 L1098,53 L1100,49 L1102,47 L1105,45 L1110,43 L1112,43 M894,77 L899,77 L904,78 L907,80 L908,83 L909,86 L910,91 L910,96 L910,101 L909,103 L909,108 L909,111 L912,115 L914,117 L917,118 L920,121 L923,123 L923,128 L921,131 L917,133 L912,133 L907,132 L902,132 L897,133 L894,135 L890,136 L887,136 L884,135 L882,131 L883,126 L884,123 L887,119 L888,116 L888,111 L887,108 L884,103 L883,101 L882,98 L880,93 L880,88 L882,85 L884,82 L887,80 L892,78 L894,77" fill="none" stroke="currentColor" stroke-width="1" stroke-linejoin="round" opacity=".15"/><path d="M1200,239 L1197,239 L1193,242 L1190,243 L1187,244 L1183,247 L1180,248 L1177,250 L1175,253 L1172,256 L1171,259 L1169,262 L1167,266 L1166,269 L1164,272 L1162,276 L1161,279 L1159,282 L1157,284 L1154,287 L1151,290 L1147,291 L1145,293 L1140,295 L1137,296 L1134,297 L1130,299 L1127,300 L1123,302 L1120,304 L1117,305 L1113,307 L1110,308 L1105,310 L1102,310 L1097,311 L1092,311 L1087,311 L1082,311 L1077,311 L1072,310 L1069,310 L1065,309 L1060,309 L1055,308 L1050,308 L1045,307 L1042,307 L1037,307 L1032,306 L1027,306 L1022,305 L1018,305 L1015,304 L1010,302 L1007,301 L1003,300 L1000,298 L997,296 L994,295 L990,292 L987,290 L985,289 L981,287 L977,285 L975,284 L970,282 L967,281 L963,279 L959,278 L956,277 L952,275 L949,274 L944,273 L941,272 L937,270 L933,269 L929,268 L924,268 L919,268 L915,269 L912,271 L909,272 L907,274 L903,277 L900,279 L897,282 L894,284 L892,286 L889,288 L887,290 L884,292 L880,295 L877,297 L874,298 L872,300 L869,302 L865,305 L862,307 L859,308 L857,310 L853,312 L849,314 L847,315 L842,317 L839,319 L837,320 L832,322 L829,323 L827,325 L822,327 L819,329 L817,330 L812,332 L809,333 L804,335 L802,336 L797,337 L794,338 L789,339 L784,340 L782,340 L777,341 L772,342 L769,342 L764,343 L759,344 L754,345 L751,345 L747,345 L742,345 L737,345 L734,345 L729,344 L724,344 L719,343 L714,343 L709,343 L706,342 L701,342 L696,342 L691,342 L686,341 L681,341 L677,340 L674,339 L669,338 L666,337 L662,335 L659,333 L656,332 L654,330 L651,327 L649,322 L649,319 L648,315 L647,310 L646,307 L644,303 L642,300 L641,297 L639,293 L637,290 L636,287 L634,283 L632,279 L631,277 L629,273 L628,269 L627,264 L627,259 L629,254 L630,252 L631,247 L631,244 L632,239 L632,234 L633,229 L632,224 L632,219 L632,214 L634,209 L635,206 L637,204 L639,201 L641,199 L644,195 L646,191 L648,189 L650,186 L651,184 L654,179 L655,176 L656,173 L657,169 L656,165 L654,164 L649,162 L646,161 L642,159 L639,157 L636,156 L632,154 L629,151 L626,150 L624,148 L621,146 L616,143 L614,142 L611,140 L609,138 L605,136 L602,133 L599,131 L597,128 L594,126 L592,123 L589,121 L587,118 L585,116 L583,113 L581,111 L579,107 L577,103 L577,98 L577,93 L577,88 L577,83 L576,80 L574,76 L573,73 L571,70 L569,67 L567,63 L567,58 L568,53 L570,50 L571,48 L573,43 L573,38 L571,34 L569,30 L568,28 L566,23 L566,20 L566,16 L568,13 L569,10 L571,8 L574,4 L575,0 M733,0 L735,3 L737,5 L739,8 L742,12 L744,15 L745,18 L747,22 L748,25 L749,29 L750,33 L750,38 L749,41 L747,45 L745,48 L744,50 L742,55 L742,58 L741,63 L739,68 L738,70 L736,73 L734,76 L732,81 L731,83 L729,88 L728,91 L727,93 L724,96 L719,98 L716,99 L711,100 L706,100 L701,100 L696,100 L691,100 L686,99 L683,98 L679,97 L676,96 L673,93 L670,91 L668,88 L665,86 L663,83 L660,81 L657,78 L654,76 L651,74 L649,72 L646,70 L644,68 L641,64 L640,60 L641,57 L643,53 L645,50 L646,48 L649,43 L650,40 L651,38 L653,33 L653,28 L653,23 L653,18 L652,13 L652,8 L654,3 L655,0 M952,0 L953,5 L954,10 L954,13 L955,18 L957,23 L958,25 L959,30 L961,33 L962,36 L964,40 L965,43 L966,48 L967,53 L967,55 L968,60 L969,65 L970,68 L972,72 L975,75 L977,77 L980,78 L985,80 L987,81 L991,83 L995,84 L997,86 L1002,88 L1005,89 L1007,91 L1010,93 L1013,96 L1016,98 L1018,101 L1020,103 L1023,106 L1025,108 L1029,111 L1032,113 L1035,115 L1037,116 L1042,118 L1045,120 L1048,121 L1052,122 L1057,121 L1058,118 L1059,113 L1060,109 L1061,106 L1061,101 L1060,96 L1058,93 L1055,91 L1052,88 L1050,87 L1047,85 L1045,83 L1041,81 L1038,78 L1036,76 L1034,73 L1032,70 L1031,65 L1030,60 L1030,56 L1029,53 L1029,48 L1030,44 L1032,40 L1034,38 L1037,35 L1040,33 L1042,30 L1045,28 L1047,25 L1048,23 L1050,19 L1050,15 L1050,12 L1049,8 L1048,3 M1183,0 L1184,5 L1185,8 L1186,13 L1187,15 L1190,20 L1192,22 L1195,24 L1197,26 M1200,62 L1197,63 L1195,66 L1193,70 L1192,73 L1193,76 L1195,80 L1197,83 L1200,85 M1200,129 L1197,131 L1194,133 L1192,136 L1190,138 L1187,142 L1185,146 L1182,147 L1180,149 L1175,150 L1170,151 L1167,151 L1162,152 L1157,152 L1152,153 L1147,153 L1145,154 L1140,154 L1135,155 L1130,156 L1125,156 L1122,156 L1117,156 L1112,157 L1107,156 L1105,156 L1100,155 L1095,154 L1091,154 L1087,153 L1083,154 L1083,159 L1084,164 L1084,169 L1082,172 L1080,175 L1077,178 L1075,180 L1072,182 L1070,185 L1069,189 L1070,193 L1072,196 L1073,199 L1075,201 L1077,206 L1076,211 L1074,214 L1071,217 L1067,218 L1064,219 L1060,220 L1055,220 L1050,220 L1045,220 L1040,220 L1035,219 L1030,219 L1027,219 L1022,218 L1017,218 L1012,217 L1007,217 L1002,217 L997,217 L992,217 L987,217 L982,217 L977,217 L972,217 L967,217 L962,217 L959,217 L954,216 L949,215 L945,214 L942,213 L937,212 L934,211 L929,210 L925,209 L922,208 L917,207 L912,207 L907,208 L902,208 L899,209 L894,211 L892,212 L887,214 L884,216 L882,217 L878,219 L874,222 L872,223 L869,225 L866,227 L862,229 L859,231 L857,232 L854,234 L849,236 L847,238 L843,239 L839,241 L837,242 L833,244 L829,246 L827,248 L824,251 L822,254 L820,257 L818,259 L814,262 L812,262 L807,262 L803,262 L799,260 L797,259 L794,257 L790,254 L787,252 L784,251 L781,249 L777,248 L774,246 L769,244 L767,243 L764,242 L760,239 L758,237 L756,234 L754,231 L752,228 L749,226 L747,224 L743,222 L739,219 L737,217 L734,216 L732,213 L729,211 L727,206 L726,204 L727,201 L729,196 L731,194 L733,191 L735,189 L738,186 L740,184 L742,181 L744,179 L747,175 L749,171 L750,169 L752,166 L754,162 L756,159 L758,156 L759,154 L761,149 L762,146 L763,141 L764,137 L766,133 L768,131 L771,128 L774,126 L777,124 L779,122 L782,120 L784,118 L787,115 L789,113 L792,110 L794,107 L797,104 L799,102 L802,99 L804,97 L807,95 L809,92 L812,89 L814,86 L816,83 L817,81 L819,76 L820,73 L820,68 L820,63 L819,60 L817,55 L816,53 L814,50 L812,45 L811,43 L810,38 L811,33 L812,30 L813,25 L814,23 L816,18 L817,13 L817,10 L818,5 L819,0 M892,60 L897,58 L902,58 L907,59 L910,60 L914,63 L916,65 L918,68 L919,71 L921,76 L921,81 L921,86 L921,91 L921,96 L921,101 L922,106 L924,108 L927,110 L929,111 L934,113 L937,114 L940,116 L944,118 L947,119 L949,121 L952,123 L953,128 L952,131 L949,134 L947,136 L943,138 L939,140 L937,141 L932,143 L929,144 L924,145 L919,145 L914,144 L912,143 L907,142 L902,143 L899,143 L894,146 L892,147 L889,149 L884,150 L881,151 L877,152 L872,152 L867,151 L864,150 L861,149 L858,146 L857,143 L857,141 L859,136 L861,133 L863,131 L865,128 L867,125 L869,122 L871,118 L873,116 L874,111 L873,106 L872,103 L869,99 L868,96 L867,93 L866,88 L867,85 L869,81 L871,78 L873,76 L876,73 L878,70 L881,68 L884,65 L887,63 L889,61 L892,60" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" opacity=".27"/><path d="M894,122 L899,113 L904,122 Z" fill="currentColor" opacity=".4"/></svg>
+  <div class="wrap">
+    <div class="bib">
+      <div>
+        <div class="label" style="color:var(--band-muted)">Ride · climb · run</div>
+        <h1>%%TITLE%%</h1>
+        <div class="sub" id="phaseLine">Base building · no goal set yet</div>
+      </div>
+      <div class="goalbox" id="goalBox"></div>
+    </div>
+    <div class="status"><span class="dot" id="statusDot"></span><span id="statusText">Connecting to the training log…</span></div>
+  </div>
+</header>
+
+<div class="tabs-bar"><nav class="wrap tabs" aria-label="Views">
+  <a href="#week" data-tab="week">Week<span class="badge" id="tabWarn" hidden></span></a>
+  <a href="#coach" data-tab="coach">Coach</a>
+  <a href="#progress" data-tab="progress">Progress</a>
+  <a href="#plan" data-tab="plan">Plan</a>
+</nav></div>
+
+<main class="wrap">
+ <div class="view" data-view="week">
+  <section class="panel week-hero" id="weekPanel" aria-labelledby="weekTitle"></section>
+  <section class="tiles" id="tiles" aria-label="Summary"></section>
+  <section class="panel" aria-labelledby="checksTitle">
+      <div class="panel-head"><h2 id="checksTitle">Checks</h2><span class="label">Load, intensity, rest</span></div>
+      <ul class="checks" id="checks"></ul>
+    </section>
+  <section class="panel" aria-labelledby="logTitle" id="logPanel">
+    <div class="panel-head"><h2 id="logTitle">Log training</h2><span class="label">GPX, TCX or by hand</span></div>
+    <div class="drop" id="drop">
+      <h3>Drop GPX or TCX files here</h3>
+      <p>Rides and runs are recognised from the file. For rides with power, export TCX: Garmin Connect's GPX export leaves out power. Climbing, hangboard and mobility go in by hand. Each new session gets a quick note from your coach.</p>
+      <div class="row-actions" style="justify-content:center">
+        <label class="btn primary" for="fileIn">Choose files</label>
+        <input type="file" id="fileIn" accept=".gpx,.tcx,application/gpx+xml,application/vnd.garmin.tcx+xml,application/xml,text/xml" multiple hidden>
+        <button class="btn" type="button" data-quick="climb">Log climbing</button>
+        <button class="btn" type="button" data-quick="strength">Log strength / mobility</button>
+        <button class="btn" type="button" data-quick="ride">Add by hand</button>
+      </div>
+    </div>
+    <div class="err" id="fileErr" hidden></div>
+    <div class="drafts" id="drafts"></div>
+    <div class="fb-recent" id="fbRecent" aria-live="polite"></div>
+    <p class="note" id="readonlyNote" hidden>You can view this log, but saving needs edit access to this page.</p>
+  </section>
+ </div>
+ <div class="view" data-view="coach" hidden>
+  <section class="panel" aria-labelledby="coachTitle" id="coachPanel">
+    <div class="panel-head"><h2 id="coachTitle">Coaching notes</h2>
+      <div class="row-actions"><button class="btn primary" id="coachBtn" type="button">Get coaching notes</button><button class="btn ghost" id="coachStop" type="button" hidden>Stop</button></div>
+    </div>
+    <div class="coach-meta" id="coachMeta">Short, honest notes on your structure, sessions and checks. Below you can ask a question or for a change to your plan or numbers; changes come as proposals you apply yourself.</div>
+    <div class="coach-out" id="coachOut"></div>
+    <div class="thread" id="thread"></div>
+    <form class="ask" id="askForm" autocomplete="off"><label for="askIn" class="flabel">Ask your coach</label>
+      <div class="ask-row"><input type="text" id="askIn" maxlength="500" placeholder="e.g. I'm away Saturday, move my long ride to Friday"><button class="btn primary" type="submit" id="askBtn">Ask</button></div>
+      <div class="row-actions"><button class="btn small ghost" type="button" id="askCompact" hidden title="Replace the conversation with a short summary the coach keeps using">Compact</button><button class="btn small ghost" type="button" id="askClear" hidden>Clear conversation</button><span class="err" id="askErr" hidden></span></div></form>
+  </section>
+ </div>
+ <div class="view" data-view="progress" hidden>
+  <div class="grid-2">
+    <section class="panel chart" aria-labelledby="benchTitle">
+      <div class="panel-head"><h2 id="benchTitle">20-minute power</h2><span class="label">your benchmark · last 12 weeks</span></div>
+      <div id="bench"></div>
+    </section>
+    <section class="panel chart" aria-labelledby="mixTitle">
+      <div class="panel-head"><h2 id="mixTitle">Intensity mix</h2><span class="label">ride &amp; run minutes per week by effort</span></div>
+      <div id="mixChart"></div>
+      <div class="legend"><span><i style="background:var(--ok)"></i>Easy (RPE 1–4)</span><span><i style="background:var(--warn)"></i>Moderate (5–6)</span><span><i style="background:var(--crit)"></i>Hard (7–10)</span></div>
+    </section>
+  </div>
+  <section class="panel chart" aria-labelledby="loadTitle">
+    <div class="panel-head"><h2 id="loadTitle">Training load</h2><span class="label">effort (RPE) × minutes · last 12 weeks</span></div>
+    <div id="loadChart"></div>
+    <div class="legend"><span><i style="background:var(--ride)"></i>Ride</span><span><i style="background:var(--climb)"></i>Climb</span><span><i style="background:var(--run)"></i>Run</span><span><i style="background:var(--strength)"></i>Strength &amp; mobility</span><span><i style="background:var(--other)"></i>Other</span></div>
+  </section>
+  <section class="panel" aria-labelledby="logListTitle">
+    <div class="panel-head"><h2 id="logListTitle">Training log</h2><span class="label" id="sessCount"></span></div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Date</th><th>Sport</th><th class="n">Time</th><th class="n">km</th><th class="n">Pace / speed</th><th class="n">m+</th><th class="n">HR</th><th class="n">RPE</th><th class="n">Load</th><th>Notes</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table></div>
+  </section>
+ </div>
+ <div class="view" data-view="plan" hidden>
+  <section class="panel" aria-labelledby="progTitle">
+    <div class="panel-head"><h2 id="progTitle">Progression</h2><span class="label" id="progLabel"></span></div>
+    <div id="prog"></div>
+  </section>
+  <div class="grid-2">
+    <section class="panel" aria-labelledby="tplTitle">
+      <div class="panel-head"><h2 id="tplTitle">Weekly structure</h2><div class="row-actions"><button class="btn small" type="button" id="tplEdit">Edit</button></div></div>
+      <div id="tpl"></div>
+    </section>
+    <section class="panel" aria-labelledby="numsTitle">
+      <div class="panel-head"><h2 id="numsTitle">Your numbers</h2><span class="note num" id="wkg"></span></div>
+      <div class="fields">
+        <div class="field"><label for="ftp">FTP (W)</label><input type="number" id="ftp" min="80" max="600" step="1" placeholder="e.g. 280"></div>
+        <div class="field"><label for="weight">Weight (kg)</label><input type="number" id="weight" min="35" max="200" step="0.1" placeholder="e.g. 80"></div>
+        <div class="field"><label for="lthr">Threshold HR</label><input type="number" id="lthr" min="100" max="210" step="1" placeholder="e.g. 165"></div>
+        <div class="field"><label for="maxHr">Max HR</label><input type="number" id="maxHr" min="120" max="230" step="1" placeholder="e.g. 185"></div>
+        <div class="field"><label for="restHr">Resting HR</label><input type="number" id="restHr" min="30" max="100" step="1" placeholder="e.g. 50"></div>
+        <span class="note wide" id="numsNote">Saved when you leave a field. These set your zones, the targets on your week and effort estimates, and the coach uses them.</span>
+      </div>
+      <div class="tablewrap" id="zones" style="margin-top:12px"></div>
+    </section>
+  </div>
+  <section class="panel" aria-labelledby="goalTitle">
+      <div class="panel-head"><h2 id="goalTitle">Goals &amp; background</h2></div>
+      <ul class="goals" id="goals"></ul>
+      <details id="goalAdd"><summary class="btn small" style="list-style:none;width:max-content">Add a goal</summary>
+        <div class="fields" style="margin-top:10px">
+          <div class="field wide"><label for="gTitle">Goal</label><input type="text" id="gTitle" placeholder="e.g. Gravel ride Schwarzwald, 7A boulder, Alpine scramble"></div>
+          <div class="field"><label for="gDate">Target date</label><input type="date" id="gDate"></div>
+          <div class="field"><label for="gSport">Sport</label><select id="gSport"><option value="ride">Ride</option><option value="climb">Climb</option><option value="run">Run</option><option value="mixed">Mixed / mountain</option></select></div>
+          <div class="field wide"><label for="gNotes">Details</label><textarea id="gNotes" placeholder="Distance, elevation, grade, what success looks like"></textarea></div>
+          <div class="row-actions wide"><button class="btn primary" type="button" id="gSave">Save goal</button><span class="err" id="gErr" hidden></span></div>
+        </div>
+      </details>
+      <div class="field" style="margin-top:14px"><label for="about">Background for coaching</label>
+        <textarea id="about" rows="7" placeholder="Current level, equipment, constraints, injuries, what you enjoy"></textarea>
+        <span class="note" id="aboutNote">Saved when you click outside the box. Coaching notes use this.</span></div>
+    </section>
+  <section class="panel" aria-labelledby="dataTitle">
+    <div class="panel-head"><h2 id="dataTitle">Your data</h2><span class="note num" id="dataCount"></span></div>
+    <p class="note" style="margin:0 0 12px;max-width:70ch">Your whole training history in one JSON file: sessions, plan, progression, numbers, goals, background and coach notes. Use it as a backup, to move to another server, or to bring in history from an earlier training page.</p>
+    <div class="row-actions"><a class="btn" href="api/export" download id="exportBtn">Export everything</a><label class="btn" for="importIn">Import a file</label><input type="file" id="importIn" accept=".json,application/json" hidden></div>
+    <div id="importBox" style="margin-top:12px" hidden></div>
+  </section>
+ </div>
+</main>
+
+<script>
+(() => {
+"use strict";
+const TSC=window.TS_CONFIG||{}; const ATH=TSC.name||"the athlete"; const SHE=TSC.pronoun==="she";
+const PT=(strs,...vals)=>strs.reduce((a,x,i)=>a+P(x)+(i<vals.length?vals[i]:""),"");
+const P=s=>SHE?s.replace(/\b(he|He|him|his|His|himself)\b/g,w=>({he:"she",He:"She",him:"her",his:"her",His:"Her",himself:"herself"}[w])):s;
+const SPORTS = {
+  ride:{label:"Ride", c:"var(--ride)", kinds:["endurance","intervals","race","test","recovery","commute"]},
+  climb:{label:"Climb", c:"var(--climb)", kinds:["session","boulder","autobelay","top-rope","lead","outdoor"]},
+  run:{label:"Run", c:"var(--run)", kinds:["short","easy","long","workout","race","test"]},
+  strength:{label:"Strength & mobility", c:"var(--strength)", kinds:["hangboard","mobility","gym"]},
+  other:{label:"Other", c:"var(--other)", kinds:["hike","swim","other"]}
+};
+const DEFAULT_RPE = {ride:{endurance:3,intervals:7,race:8,test:9,recovery:2,commute:2}, climb:{session:5,boulder:6,autobelay:5,"top-rope":5,lead:6,outdoor:6},
+  run:{short:3,easy:3,long:4,workout:7,race:8,test:9}, strength:{hangboard:6,mobility:2,gym:6}, other:{hike:3,swim:4,other:4}};
+const HOW = {
+  "ride:endurance":"Zone 2: conversational, about 60–75% of FTP. Steady, no surges.",
+  "ride:intervals":"15 min warm-up, then e.g. 4 × 8 min at 95–100% FTP or 5 × 4 min hard, equal rest.",
+  "ride:race":"Race. Counts as the week's hard session.",
+  "run:test":"15 min easy with 4 strides, then 20 min as hard as you can hold evenly, 10 min easy. Your average heart rate over those 20 minutes is close to your threshold HR.",
+  "ride:test":"20 min warm-up with 3 × 1 min hard, then 20 min all-out at an even pace, 10 min cool-down. FTP is about 95% of the 20-min average.",
+  "ride:recovery":"Very easy spin, legs only.", "ride:commute":"Keep it truly easy so it stays transport, not training stress.",
+  "climb:boulder":"Movement focus: quality attempts, 2–3 min rest between hard ones.",
+  "climb:autobelay":"Route volume with real rests between laps; quiet feet, breathing.",
+  "climb:top-rope":"Group session; use the rests the rope gives you.", "climb:lead":"Clipping and rests at stances.",
+  "climb:outdoor":"Rock day.", "climb:session":"Movement focus; rest properly between hard attempts instead of going back to back.",
+  "run:short":"10–20 min very easy, run-walk is fine. Stop if something starts to hurt, and don't run the next day if it still does.", "run:easy":"Conversational pace. Keep it short while tendons adapt.",
+  "run:long":"Easy pace, longer than usual by at most 10%.", "run:workout":"Strides, hills or tempo. Easy around it.",
+  "run:race":"", "strength:hangboard":"Submaximal: e.g. 6–8 × 10 s hangs, stop well before failure.",
+  "strength:mobility":"Hips, shoulders, hamstrings, 15–20 min.", "strength:gym":"General strength, legs and core.",
+  "other:hike":"", "other:swim":"", "other:other":""
+};
+const DAYS=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+const MS_DAY=864e5;
+
+// ---------- utils ----------
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const dayNum=d=>Math.floor(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/MS_DAY);
+const parseDate=s=>{const [y,m,d]=String(s).split("-").map(Number);return new Date(y,(m||1)-1,d||1);};
+const isoDate=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+const today=()=>new Date();
+const dow=d=>(d.getDay()+6)%7; // Mon=0
+const mondayOf=d=>new Date(d.getFullYear(),d.getMonth(),d.getDate()-dow(d));
+const weekKey=s=>{const m=mondayOf(parseDate(s));return dayNum(m);}; // day number of the Monday
+const curWeekKey=()=>dayNum(mondayOf(today()));
+const fromDayNum=n=>{const d=new Date(n*MS_DAY);return new Date(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate());};
+const fmtShort=d=>d.toLocaleDateString("en-GB",{day:"numeric",month:"short"});
+const fmtDay=s=>parseDate(s).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"});
+const km1=x=>(Math.round(x*10)/10).toFixed(1);
+function fmtDur(sec){ if(!sec&&sec!==0) return "–"; sec=Math.round(sec); const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),s=sec%60;
+  return h?`${h}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`:`${m}:${String(s).padStart(2,"0")}`; }
+const fmtMin=m=>{m=Math.round(m); return m>=60?`${Math.floor(m/60)}h${m%60?String(m%60).padStart(2,"0"):""}`:`${m} min`;};
+function fmtPace(sec,km){ if(!sec||!km) return "–"; const p=sec/km; return `${Math.floor(p/60)}:${String(Math.round(p%60)).padStart(2,"0")}/km`; }
+function parseDur(str){ str=String(str||"").trim(); if(!str) return null; if(/^\d+(\.\d+)?$/.test(str)) return Math.round(parseFloat(str)*60);
+  const p=str.split(":").map(Number); if(p.some(isNaN)) return NaN; if(p.length===2) return p[0]<=5 ? p[0]*3600+p[1]*60 : p[0]*60+p[1]; /* "1:30" = 1h30, "45:00" = 45 min */ if(p.length===3) return p[0]*3600+p[1]*60+p[2]; return NaN; }
+const sportC=s=>(SPORTS[s]||SPORTS.other).c;
+const sportL=s=>(SPORTS[s]||SPORTS.other).label;
+
+// ---------- GPX ----------
+function haversine(a,b){const R=6371000,t=Math.PI/180;const dLat=(b.lat-a.lat)*t,dLon=(b.lon-a.lon)*t;const x=Math.sin(dLat/2)**2+Math.cos(a.lat*t)*Math.cos(b.lat*t)*Math.sin(dLon/2)**2;return 2*R*Math.asin(Math.sqrt(x));}
+function parseTrack(text){
+  const xml=new DOMParser().parseFromString(text,"application/xml");
+  if(xml.getElementsByTagName("parsererror").length) throw new Error("This file can't be read. Use a GPX or TCX export.");
+  const root=xml.documentElement; const isTcx=/TrainingCenterDatabase/i.test(root.localName||root.nodeName);
+  const kids=el=>{ const out={}; for(const c of Array.from(el.getElementsByTagName("*"))){ const ln=(c.localName||c.nodeName.split(":").pop()).toLowerCase(); if(!(ln in out)) out[ln]=c; } return out; };
+  const num=el=>{ if(!el) return null; const v=parseFloat(el.textContent); return isFinite(v)?v:null; };
+  let nodes, tag="", name="";
+  if(isTcx){ nodes=Array.from(root.getElementsByTagName("*")).filter(e=>(e.localName||"").toLowerCase()==="trackpoint");
+    const act=Array.from(root.getElementsByTagName("*")).find(e=>(e.localName||"").toLowerCase()==="activity"); tag=`${act?act.getAttribute("Sport")||"":""} ${root.getAttribute("creator")||""}`; }
+  else { nodes=Array.from(root.getElementsByTagName("*")).filter(e=>(e.localName||"").toLowerCase()==="trkpt");
+    if(nodes.length<2) nodes=Array.from(root.getElementsByTagName("*")).filter(e=>(e.localName||"").toLowerCase()==="rtept");
+    const k=kids(root); name=k.name?k.name.textContent.trim():""; tag=`${k.type?k.type.textContent:""} ${name} ${root.getAttribute("creator")||""}`; }
+  if(nodes.length<2) throw new Error("No track points found in this file.");
+  const pts=nodes.map(n=>{ const k=kids(n); let lat=NaN,lon=NaN;
+    if(isTcx){ lat=num(k.latitudedegrees)??NaN; lon=num(k.longitudedegrees)??NaN; } else { const la=n.getAttribute("lat"),lo=n.getAttribute("lon"); lat=la!=null?+la:NaN; lon=lo!=null?+lo:NaN; }
+    const hrRaw=isTcx?(k.heartratebpm?num(kids(k.heartratebpm).value):null):num(k.hr||k.heartrate);
+    const pwRaw=num(k.watts||k.power); const cad=num(k.cadence||k.cad);
+    const t=k.time?Date.parse(k.time.textContent):null;
+    return {lat,lon,ele:num(isTcx?k.altitudemeters:k.ele),t:isFinite(t)?t:null,dist:isTcx?num(k.distancemeters):null,
+      hr:hrRaw>30&&hrRaw<240?hrRaw:null,pw:pwRaw!=null&&pwRaw>=0&&pwRaw<2500?pwRaw:null,cad:cad!=null&&cad>=0&&cad<250?cad:null};
+  }).filter(p=>(isFinite(p.lat)&&isFinite(p.lon))||p.t!=null||p.dist!=null);
+  if(pts.length<2) throw new Error("No track points found in this file.");
+  const hasDist=pts.filter(p=>p.dist!=null).length>=2;
+  const hasPos=hasDist||pts.filter(p=>isFinite(p.lat)&&isFinite(p.lon)).length>=2;
+  let dist=0,moving=0,lastD=null; const cum=[0],movCum=[0];
+  if(hasDist) for(const p of pts){ if(p.dist!=null){ lastD=p.dist; break; } }
+  for(let i=1;i<pts.length;i++){ let d=0;
+    if(hasDist){ if(pts[i].dist!=null){ d=Math.max(0,pts[i].dist-(lastD??pts[i].dist)); lastD=pts[i].dist; } }
+    else if(isFinite(pts[i].lat)&&isFinite(pts[i-1].lat)) d=haversine(pts[i-1],pts[i]);
+    dist+=d; cum.push(dist);
+    const dt=(pts[i].t!=null&&pts[i-1].t!=null)?(pts[i].t-pts[i-1].t)/1000:0;
+    if(dt>0&&dt<120&&(!hasPos||d/dt>=0.3||(pts[i].pw||0)>0)) moving+=dt; movCum.push(moving); }
+  let gain=0,loss=0,anchor=null; for(const p of pts){ if(p.ele==null) continue; if(anchor==null){anchor=p.ele;continue;} const d=p.ele-anchor; if(d>=3){gain+=d;anchor=p.ele;} else if(d<=-3){loss-=d;anchor=p.ele;} }
+  const hasTime=pts[0].t!=null&&pts[pts.length-1].t!=null; const elapsed=hasTime?(pts[pts.length-1].t-pts[0].t)/1000:null;
+  let hrSum=0,hrW=0,hrMax=null,pwSum=0,pwW=0,cadSum=0,cadW=0; const half=[{hr:0,w:0,d:0,t:0,p:0,pw:0},{hr:0,w:0,d:0,t:0,p:0,pw:0}]; const pw1s=[];
+  for(let i=1;i<pts.length;i++){ const dt=hasTime?(pts[i].t-pts[i-1].t)/1000:1; if(!(dt>0&&dt<120)) continue; const h=movCum[i]<=moving/2?0:1; const seg=cum[i]-cum[i-1];
+    if(!hasPos||seg/dt>=0.3){half[h].d+=seg;half[h].t+=dt;}
+    if(pts[i].hr){hrSum+=pts[i].hr*dt;hrW+=dt;half[h].hr+=pts[i].hr*dt;half[h].w+=dt;hrMax=Math.max(hrMax||0,pts[i].hr);}
+    if(pts[i].pw!=null){ pwSum+=pts[i].pw*dt; pwW+=dt; half[h].p+=pts[i].pw*dt; half[h].pw+=dt; for(let s=0;s<Math.min(Math.round(dt),30);s++) pw1s.push(pts[i].pw); }
+    if(pts[i].cad>0){cadSum+=pts[i].cad*dt;cadW+=dt;} }
+  let p20=null; if(pw1s.length>=1200){ let acc=0,best=0; for(let i=0;i<pw1s.length;i++){ acc+=pw1s[i]; if(i>=1200) acc-=pw1s[i-1200]; if(i>=1199) best=Math.max(best,acc/1200); } p20=Math.round(best); }
+  let np=null; if(pw1s.length>=120){ let acc=0,sum4=0,n=0; for(let i=0;i<pw1s.length;i++){ acc+=pw1s[i]; if(i>=30) acc-=pw1s[i-30]; if(i>=29){ sum4+=(acc/30)**4; n++; } } np=Math.round((sum4/n)**0.25); }
+  // aerobic drift: only meaningful over an hour or more, from power (rides) or pace (runs); outdoor ride speed is mostly wind and stops
+  const kmh0=moving?(dist/1000)/(moving/3600):0; const rideish=/cycl|bik|ride|velo|whoosh|zwift|rouvy/i.test(tag)||kmh0>15||pwW>0;
+  let decoupling=null; if(moving>=3600&&half[0].w>300&&half[1].w>300){ let o1=null,o2=null;
+    if(half[0].pw>0&&half[1].pw>0){ o1=half[0].p/half[0].pw; o2=half[1].p/half[1].pw; }
+    else if(!rideish&&hasPos&&half[0].t>0&&half[1].t>0&&half[0].d>0&&half[1].d>0){ o1=half[0].d/half[0].t; o2=half[1].d/half[1].t; }
+    if(o1&&o2){ const e1=o1/(half[0].hr/half[0].w),e2=o2/(half[1].hr/half[1].w); decoupling=Math.round((e1-e2)/e1*1000)/10; } }
+  const step=Math.max(1,Math.ceil(pts.length/240)); const prof={d:[],e:[],h:[],p:[]};
+  for(let i=0;i<pts.length;i+=step){ prof.d.push(hasPos?Math.round(cum[i]/10)/100:Math.round(movCum[i]/6)/10); prof.e.push(pts[i].ele!=null?Math.round(pts[i].ele):null); prof.h.push(pts[i].hr?Math.round(pts[i].hr):null);
+    let ps=0,pn=0; for(let j=i;j<Math.min(i+step,pts.length);j++){ if(pts[j].pw!=null){ps+=pts[j].pw;pn++;} } prof.p.push(pn?Math.round(ps/pn):null); }
+  if(!prof.p.some(v=>v!=null)) delete prof.p;
+  prof.x=hasPos?"km":"min";
+  const durS=moving>0?moving:(elapsed||0); const kmh=durS?(dist/1000)/(durS/3600):0;
+  const isRide=/cycl|bik|ride|velo|whoosh|zwift|rouvy/i.test(tag)||kmh>15||pwW>0; const indoor=/virtual|whoosh|zwift|rouvy|indoor/i.test(tag)||!hasPos||pwW>0; // power only comes from the home trainer
+  return { date:hasTime?isoDate(new Date(pts[0].t)):isoDate(today()), km:hasPos?Math.round(dist/10)/100:null,
+    durationS:durS?Math.round(durS):null, elapsedS:elapsed?Math.round(elapsed):null, elevGain:Math.round(gain), elevLoss:Math.round(loss),
+    avgHr:hrW?Math.round(hrSum/hrW):null, maxHr:hrMax?Math.round(hrMax):null, avgPower:pwW?Math.round(pwSum/pwW):null, np, p20, avgCad:cadW?Math.round(cadSum/cadW):null, decoupling,
+    trackName:name.slice(0,80), profile:prof, sport:isRide?"ride":"run", where:isRide?(indoor?"indoor":"outdoor"):null };
+}
+
+// ---------- state ----------
+let sessions=[], template=null, profile={}, goals=[], coaching=null, drafts=[], expanded=null;
+let db=null, canWrite=true, dbReady=false, sample=null, editingTpl=false, tplDraft=null;
+
+// ---------- load model ----------
+const defaultRpe=s=>(DEFAULT_RPE[s.sport]||{})[s.kind]||4;
+const minutesOf=s=>s.durationS?s.durationS/60:0;
+const ftpOf=()=>+profile.ftp||0, hrMaxOf=()=>+profile.maxHr||0, lthrOf=()=>+profile.lthr||0;
+const hrZ2Top=()=>lthrOf()?Math.round(.83*lthrOf()):hrMaxOf()?Math.round(.78*hrMaxOf()):0;
+const hrRecTop=()=>lthrOf()?Math.round(.68*lthrOf()):hrMaxOf()?Math.round(.66*hrMaxOf()):0;
+const NUMS={ftp:[80,600,"FTP","W"],weight:[35,200,"Weight","kg"],lthr:[100,210,"Threshold HR","bpm"],maxHr:[120,230,"Max HR","bpm"],restHr:[30,100,"Resting HR","bpm"]};
+function dataRpe(s){ const ftp=ftpOf(),hm=hrMaxOf(),m=minutesOf(s); const pw=+s.np||+s.avgPower;
+  if(ftp&&pw&&m>=10){ const f=pw/ftp; return f<0.65?2:f<0.75?3:f<0.83?4:f<0.88?5:f<0.93?6:f<0.98?7:f<1.03?8:9; }
+  const lt=lthrOf(); if(lt&&+s.avgHr&&m>=10&&s.sport!=="climb"&&s.sport!=="strength"){ const f=s.avgHr/lt; return f<0.69?2:f<0.84?3:f<0.90?4:f<0.95?5:f<1.00?6:f<1.05?7:8; }
+  if(hm&&+s.avgHr&&m>=10&&s.sport!=="climb"&&s.sport!=="strength"){ const f=s.avgHr/hm; return f<0.70?2:f<0.78?3:f<0.83?4:f<0.87?5:f<0.90?6:f<0.93?7:8; }
+  return null; }
+const estRpe=s=>dataRpe(s)||defaultRpe(s);
+const rpeOf=s=>s.rpe||estRpe(s);
+const isCardio=s=>s.sport==="ride"||s.sport==="run"||s.sport==="other";
+const QUALITY=["intervals","race","workout","test"];
+const avgRpe=ms=>{ const m=ms.reduce((a,s)=>a+minutesOf(s),0); return Math.round(ms.reduce((a,s)=>a+rpeOf(s)*minutesOf(s),0)/Math.max(1,m)); };
+const fulfilled=(it,ms)=>ms.length>0&&!(QUALITY.includes(it.kind)&&avgRpe(ms)<=4);
+const isRoutine=s=>s.kind==="commute"||(s.sport==="strength"&&s.kind==="mobility");
+const steadyKinds=["endurance","long","easy","short","commute","recovery"];
+function howFor(it){ if(it.how) return it.how; let h=HOW[`${it.sport}:${it.kind}`]||""; const ftp=ftpOf(),hm=hrMaxOf();
+  if(it.sport==="ride"&&["endurance","commute","recovery"].includes(it.kind)){ const rec=it.kind==="recovery"; const z=[]; if(ftp) z.push(`under ${Math.round((rec?.55:.75)*ftp)} W`); { const hz=rec?hrRecTop():hrZ2Top(); if(hz) z.push(`HR under ${hz}`); } if(z.length) h+=` Target: ${z.join(", ")}.`; }
+  if(it.sport==="ride"&&it.kind==="intervals"&&ftp) h+=` Threshold for you is ${Math.round(.95*ftp)}–${Math.round(1.05*ftp)} W.`;
+  if(it.sport==="run"&&hrZ2Top()) h+=` Keep HR under ${hrZ2Top()}.`;
+  return h; }
+function matchDay(items,logged){ const used=new Set(); const res=items.map(()=>[]);
+  items.forEach((it,k)=>{ const ms=logged.filter(s=>!used.has(s.id)&&s.sport===it.sport&&s.kind===it.kind); const take=it.kind==="commute"?ms:ms.slice(0,1); take.forEach(s=>used.add(s.id)); res[k]=take; });
+  items.forEach((it,k)=>{ if(res[k].length||it.kind==="commute") return; const m=logged.find(s=>!used.has(s.id)&&s.sport===it.sport&&s.kind!=="commute"); if(m){ used.add(m.id); res[k]=[m]; } });
+  return {res,used}; }
+const loadOf=s=>rpeOf(s)*minutesOf(s);
+const zoneOf=s=>{const r=rpeOf(s); return r<=4?"easy":r<=6?"mod":"hard";};
+function weekStats(wk){ const o={load:0,min:0,by:{},zone:{easy:0,mod:0,hard:0},n:0};
+  for(const s of sessions){ if(weekKey(s.date)!==wk) continue; const l=loadOf(s),m=minutesOf(s); o.load+=l;o.min+=m;o.by[s.sport]=(o.by[s.sport]||0)+l;if(isCardio(s)) o.zone[zoneOf(s)]+=m;o.n++; } return o; }
+const tplDays=()=>template&&Array.isArray(template.days)&&template.days.length===7?template.days:null;
+let weekPlans={};
+const planFor=wk=>{ const o=weekPlans[String(wk)]; return o&&Array.isArray(o.days)&&o.days.length===7?o.days:progressedPlan(wk); };
+// Progression: 4-week cycles (3 build + 1 recovery). Intervals climb a ladder that only advances when the set was done; the long ride grows by the calendar.
+let progression=null, weekOff=0;
+const LADDER=[[3,8],[4,8],[3,12],[4,10],[3,15],[2,20],[3,20]];
+const progOn=()=>!!(progression&&progression.on!==false&&Number.isFinite(+progression.start));
+function cyclePos(wk){ if(!progOn()) return null; const idx=Math.round((wk-+progression.start)/7); if(idx<0) return null; return {idx,cycle:Math.floor(idx/4),week:idx%4,recovery:idx%4===3}; }
+const posTxt=pos=>`Cycle ${pos.cycle+1} · ${pos.recovery?"recovery week":`build week ${pos.week+1} of 3`}`;
+const isQualityItem=it=>(it.sport==="ride"&&it.kind==="intervals")||(it.sport==="run"&&it.kind==="workout");
+const isLongItem=it=>!it.optional&&((it.sport==="ride"&&it.kind==="endurance")||(it.sport==="run"&&it.kind==="long"));
+function isIntervalDone(wk){ return sessions.some(s=>weekKey(s.date)===wk&&isQualityItem(s)&&rpeOf(s)>=5); }
+function stepFor(wk){ const pos=cyclePos(wk); if(!pos) return 0; const now=curWeekKey(); let n=+progression.stepBase||0;
+  for(let i=0;i<pos.idx;i++){ if(i%4===3) continue; const w=+progression.start+7*i; if(w>=now||isIntervalDone(w)) n++; } return Math.min(n,LADDER.length-1); }
+function intervalItem(it,step){ const [n,m]=LADDER[step]; const rest=Math.round(m/2); const ftp=ftpOf(); const lt=lthrOf();
+  const tgt=it.sport==="run"?(lt?`threshold, HR ${Math.round(.95*lt)}–${lt}`:"threshold effort (comfortably hard)"):ftp?`${Math.round(.95*ftp)}–${ftp} W`:"95–100% of FTP";
+  return {...it,min:Math.round((15+n*m+(n-1)*rest+10)/5)*5,note:`${n} × ${m} min at ${tgt}`,prog:true,
+    how:`15 min warm-up, then ${n} × ${m} min at ${tgt} with ${rest} min easy between, 10 min cool-down. Step ${step+1} of ${LADDER.length}; the next step unlocks when this set is done.`}; }
+function testItem(it){ return it.sport==="run"?{...it,kind:"test",min:45,note:"20-min time trial",prog:true,how:HOW["run:test"]}
+  :{...it,kind:"test",min:60,note:"20-min FTP test",prog:true,how:HOW["ride:test"]+" Upload the TCX and the page works out the result."}; }
+function progressedPlan(wk){ const t=tplDays(); const pos=cyclePos(wk); if(!t||!pos) return t;
+  let long=null; t.forEach((items,i)=>items.forEach((it,k)=>{ if(isLongItem(it)&&(!long||+it.min>long.min)) long={i,k,min:+it.min,sport:it.sport}; }));
+  const step=stepFor(wk);
+  return t.map((items,i)=>items.map((it,k)=>{
+    if(isQualityItem(it)) return pos.recovery?testItem(it):intervalItem(it,step);
+    if(long&&long.i===i&&long.k===k){ const run=long.sport==="run"; const inc=run?Math.max(5,Math.round(long.min*.1/5)*5):15, cap=run?180:240;
+      const base=Math.min(cap,long.min+inc*pos.cycle); const min=pos.recovery?Math.round(base*.65/5)*5:Math.min(cap,base+inc*pos.week);
+      return {...it,min,note:pos.recovery?"recovery week: short and truly easy":it.note,prog:true}; }
+    return it; })); }
+function p20Of(s){ if(s.p20) return s.p20; const p=s.profile&&s.profile.p; if(!p||!s.durationS) return null; const n=Math.round(1200/(s.durationS/p.length)); if(n<3||p.length<n) return null;
+  let best=0; for(let i=0;i+n<=p.length;i++){ let a=0,c=0; for(let j=i;j<i+n;j++){ if(p[j]!=null){ a+=p[j]; c++; } } if(c>=n*.9) best=Math.max(best,a/c); } return best?Math.round(best):null; }
+function bestP20(days){ const now=dayNum(today()); let b=null; for(const s of sessions){ if(s.sport!=="ride") continue; const d=dayNum(parseDate(s.date)); if(d>now||now-d>days) continue; const p=p20Of(s); if(p&&(!b||p>b.p)) b={s,p}; } return b; }
+const daysTxt=days=>DAYS.map((d,i)=>`${d}: ${((days||[])[i]||[]).map(x=>`${x.sport} ${x.kind} ${x.min} min${x.note?" ("+x.note+")":""}${x.optional?" [optional]":""}`).join(", ")||"rest"}`).join("\n");
+const plannedMin=()=>{const t=planFor(curWeekKey()); return t?t.flat().filter(x=>!x.optional).reduce((a,x)=>a+(+x.min||0),0):0;};
+const plannedCount=()=>{const t=planFor(curWeekKey()); return t?t.flat().filter(x=>!x.optional).length:0;};
+
+// ---------- checks ----------
+function computeChecks(){
+  const out=[]; const now=dayNum(today()); const cw=curWeekKey();
+  if(!sessions.length){ out.push({lvl:"",t:"Nothing logged yet",d:"Checks appear once sessions are in: load jumps, intensity balance, rest days, finger load and run distance."}); return out; }
+  const recent=d=>sessions.filter(s=>now-dayNum(parseDate(s.date))<=d && dayNum(parseDate(s.date))<=now);
+  const nig=recent(10).filter(s=>s.niggle).sort((a,b)=>a.date<b.date?1:-1);
+  if(nig.length) out.push({lvl:"crit",t:"Niggle reported",d:`${fmtDay(nig[0].date)} (${sportL(nig[0].sport).toLowerCase()}): “${nig[0].niggle}”. Take load off whatever it affects until it's gone.`});
+  // load ramp
+  for(const w of [cw,cw-7]){ const cur=weekStats(w).load; const prev=[1,2,3,4].map(i=>weekStats(w-7*i).load).filter(x=>x>0);
+    if(cur>0&&prev.length>=2){ const avg=prev.reduce((a,b)=>a+b,0)/prev.length;
+      if(cur>avg*1.3){ out.push({lvl:"warn",t:`Load up ${Math.round((cur/avg-1)*100)}% ${w===cw?"this week":"last week"}`,d:`Against a ${prev.length}-week average. One big week is fine; two in a row is how overuse starts.`}); break; } } }
+  // intensity mix, last 14 days
+  const r14=recent(14).filter(isCardio); const zm={easy:0,mod:0,hard:0}; r14.forEach(s=>zm[zoneOf(s)]+=minutesOf(s)); const tot=zm.easy+zm.mod+zm.hard;
+  if(tot>=180){ const mod=zm.mod/tot,hard=zm.hard/tot;
+    if(mod>0.35) out.push({lvl:"warn",t:`${Math.round(mod*100)}% of time at moderate effort`,d:"Too much in the middle zone: easy sessions creeping up, hard ones not hard. Make easy days easier so the hard ones count."});
+    else if(hard>0.25) out.push({lvl:"warn",t:`${Math.round(hard*100)}% of time at hard effort`,d:"More hard work than most people recover from. Swap one hard session for easy volume."});
+    else out.push({lvl:"ok",t:`Intensity balance: ${Math.round(zm.easy/tot*100)}% easy`,d:"Mostly easy with focused hard sessions. That's the mix that builds an aerobic base."}); }
+  // back-to-back hard days
+  const hardDays=new Set(recent(7).filter(s=>rpeOf(s)>=7).map(s=>dayNum(parseDate(s.date))));
+  for(const d of hardDays){ if(hardDays.has(d+1)){ out.push({lvl:"warn",t:"Hard days back to back",d:`${fmtDay(isoDate(fromDayNum(d)))} and the day after were both RPE 7+. Put an easy day between hard sessions.`}); break; } }
+  // easy days done hard
+  const hot=recent(7).filter(s=>(s.sport==="ride"||s.sport==="run")&&steadyKinds.includes(s.kind)&&rpeOf(s)>=6&&minutesOf(s)>=20).sort((a,b)=>a.date<b.date?1:-1);
+  if(hot.length) out.push({lvl:"warn",t:`Easy session done hard: ${fmtDay(hot[0].date)}`,d:`${sportL(hot[0].sport)} ${hot[0].kind} at RPE ${rpeOf(hot[0])}${hot.length>1?`, and ${hot.length-1} more in the last week`:""}. Easy days done hard blunt the hard days and add fatigue for no gain.`});
+  // more time than planned
+  for(const [w,label] of [[cw,"This week"],[cw-7,"Last week"]]){ const pl=planFor(w); if(!pl) continue; const pm=pl.flat().reduce((a,x)=>a+(+x.min||0),0), am=weekStats(w).min;
+    if(pm>0&&am>pm*1.25){ out.push({lvl:"warn",t:`${label}: ${Math.round((am/pm-1)*100)}% more time than planned`,d:`${fmtMin(am)} against ${fmtMin(pm)} planned, optional sessions included. Doing more than the plan is a deviation too: trim what ran long, or raise the plan on purpose.`}); break; } }
+  // rest days
+  const active=new Set(sessions.filter(s=>{const x=now-dayNum(parseDate(s.date)); return x>=0&&x<7;}).filter(s=>!(s.sport==="strength"&&s.kind==="mobility")&&s.kind!=="commute").map(s=>dayNum(parseDate(s.date))));
+  if(active.size>=7) out.push({lvl:"warn",t:"No rest day in the last 7",d:"Mobility and commuting don't count. Take a full day off this week."});
+  // finger load
+  const fingerDays=[...new Set(recent(10).filter(s=>s.sport==="climb"||s.kind==="hangboard").map(s=>dayNum(parseDate(s.date))))].sort((a,b)=>a-b);
+  for(let i=2;i<fingerDays.length;i++){ if(fingerDays[i]-fingerDays[i-2]===2){ out.push({lvl:"warn",t:"Three finger-loading days in a row",d:"Climbing or hangboarding three days running. Finger tendons adapt slower than muscles, especially after a break."}); break; } }
+  // run spike
+  for(const s of recent(21).filter(x=>x.sport==="run"&&x.km)){ const d=dayNum(parseDate(s.date)); let prior=0;
+    for(const x of sessions){ if(x.sport!=="run"||x.id===s.id) continue; const dx=dayNum(parseDate(x.date)); if(dx>=d-30&&dx<d) prior=Math.max(prior,+x.km||0); }
+    if(prior>0&&s.km>prior*1.1&&s.km-prior>=1){ out.push({lvl:"warn",t:`Run jump: ${km1(s.km)} km`,d:`${Math.round((s.km/prior-1)*100)}% longer than your longest run in the 30 days before (${km1(prior)} km). Running load is what your legs are least used to.`}); break; } }
+  // running comeback: weekly running minutes
+  const runMin=wk=>sessions.filter(x=>x.sport==="run"&&weekKey(x.date)===wk).reduce((a,x)=>a+minutesOf(x),0);
+  const rNow=runMin(cw), rPrev=runMin(cw-7);
+  if(rNow>0&&rPrev>0&&rNow>rPrev*1.2&&rNow-rPrev>=10) out.push({lvl:"warn",t:`Running up ${Math.round((rNow/rPrev-1)*100)}% on last week`,d:`${Math.round(rNow)} min this week vs ${Math.round(rPrev)}. Add running minutes slowly, about 10% a week, more so when coming back from an injury.`});
+  const runDays=[...new Set(recent(7).filter(x=>x.sport==="run").map(x=>dayNum(parseDate(x.date))))].sort((a,b)=>a-b);
+  for(let i=1;i<runDays.length;i++){ if(runDays[i]-runDays[i-1]===1){ out.push({lvl:"warn",t:"Runs on consecutive days",d:"Leave a day between runs so tendons and bones can adapt."}); break; } }
+  // last week vs structure
+  const lw=cw-7; const t=planFor(lw); if(t){ let missed=0,planned=0; t.forEach((items,i)=>{ const date=isoDate(fromDayNum(lw+i)); const {res}=matchDay(items,sessions.filter(s=>s.date===date)); items.forEach((it,k)=>{ if(it.optional) return; planned++; if(!fulfilled(it,res[k])) missed++; }); });
+    if(sessions.some(s=>weekKey(s.date)===lw)){ if(missed>planned/3) out.push({lvl:"warn",t:`Last week: ${planned-missed} of ${planned} planned sessions done`,d:"If the structure keeps slipping, make it fit your real week rather than skipping parts of it."});
+      else out.push({lvl:"ok",t:`Last week: ${planned-missed} of ${planned} planned sessions done`,d:"Consistency is the main thing structure buys you."}); } }
+  // progression: a missed interval set repeats the step
+  { const lp=cyclePos(cw-7); if(lp&&!lp.recovery&&!isIntervalDone(cw-7)){ const [n,m]=LADDER[stepFor(cw)]; out.push({lvl:"warn",t:"Last week's intervals weren't done",d:`The ladder doesn't move: ${n} × ${m} min repeats this week. The step only advances when the set is done.`}); } }
+  // benchmark says FTP is set low
+  { const bb=bestP20(42); if(bb&&ftpOf()&&Math.round(.95*bb.p)>=ftpOf()*1.03) out.push({lvl:"",t:"Your FTP may be set low",d:`Best 20 minutes in the last 6 weeks was ${bb.p} W (${fmtDay(bb.s.date)}), which suggests about ${Math.round(.95*bb.p)} W against ${ftpOf()} W set. See Progress.`}); }
+  if(!out.some(c=>c.lvl==="warn"||c.lvl==="crit")) out.unshift({lvl:"ok",t:"Nothing to flag",d:"Load, intensity and rest look balanced."});
+  const rank={crit:0,warn:1,ok:2,"":3}; return out.sort((a,b)=>rank[a.lvl]-rank[b.lvl]);
+}
+
+// ---------- render ----------
+function renderHeader(){
+  const now=dayNum(today()); const up=goals.filter(g=>g.date&&dayNum(parseDate(g.date))>=now).sort((a,b)=>a.date<b.date?-1:1);
+  if(up.length){ const g=up[0]; const d=dayNum(parseDate(g.date))-now; const w=Math.floor(d/7);
+    $("goalBox").innerHTML=`<div class="big num">${d>=14?w+" wk":d+" d"}</div><div class="label">to ${esc(g.title)}</div>`;
+    $("phaseLine").textContent=`Working toward ${g.title} · ${fmtShort(parseDate(g.date))}`; }
+  else { $("goalBox").innerHTML=""; $("phaseLine").textContent=goals.length?"Goals logged, none dated yet · base building":"Base building · no goal set yet"; }
+  const pos=cyclePos(curWeekKey()); if(pos) $("phaseLine").textContent=`${posTxt(pos)} · ${$("phaseLine").textContent.replace(/^Base building · /,"")}`;
+}
+function renderTiles(){
+  const cw=curWeekKey(); const ws=weekStats(cw); const prev=[1,2,3,4].map(i=>weekStats(cw-7*i).load).filter(x=>x>0); const avg=prev.length?prev.reduce((a,b)=>a+b,0)/prev.length:0;
+  const now=dayNum(today()); const r14=sessions.filter(s=>isCardio(s)&&now-dayNum(parseDate(s.date))<=14); const zm={easy:0,mod:0,hard:0}; r14.forEach(s=>zm[zoneOf(s)]+=minutesOf(s)); const tot=zm.easy+zm.mod+zm.hard;
+  const done=countDoneThisWeek();
+  const tiles=[
+    {l:"This week",v:`${fmtMin(ws.min)}`,s:plannedMin()?`of ${fmtMin(plannedMin())} planned`:"no structure set"},
+    {l:"Sessions",v:`${done.done}<small> / ${done.planned}</small>`,s:`${ws.n} logged this week`},
+    {l:"Load vs 4-wk avg",v:avg?`${Math.round(ws.load/avg*100)}<small>%</small>`:"–",s:avg?`${Math.round(ws.load)} vs ${Math.round(avg)}`:"needs 2+ weeks"},
+    {l:"Easy riding & running, 14 d",v:tot?`${Math.round(zm.easy/tot*100)}<small>%</small>`:"–",s:"aim for about 75–80%"}
+  ];
+  $("tiles").innerHTML=tiles.map(t=>`<div class="tile"><span class="label">${t.l}</span><span class="v">${t.v}</span><span class="s">${esc(t.s)}</span></div>`).join("");
+}
+function countDoneThisWeek(){ const cw=curWeekKey(); const t=planFor(cw); if(!t) return {done:0,planned:0}; let d=0,p=0;
+  t.forEach((items,i)=>{ const date=isoDate(fromDayNum(cw+i)); const {res}=matchDay(items,sessions.filter(s=>s.date===date)); items.forEach((it,k)=>{ if(it.optional) return; p++; if(fulfilled(it,res[k])) d++; }); }); return {done:d,planned:p}; }
+
+function renderWeek(){
+  const el=$("weekPanel"); const cw=curWeekKey()+7*weekOff; const t=planFor(cw); const todayN=dayNum(today()); const can=canWrite&&db;
+  const ws=fromDayNum(cw), we=fromDayNum(cw+6);
+  const adj=weekPlans[String(cw)], adjNext=weekPlans[String(cw+7)];
+  const title=weekOff===0?"This week":weekOff===1?"Next week":weekOff===-1?"Last week":`Week of ${fmtShort(ws)}`; const pos=cyclePos(cw);
+  const chip=pos?`<span class="cyc">${[0,1,2,3].map(i=>`<i class="${i===3?"rec ":""}${i<=pos.week?"on":""}"></i>`).join("")}<b>${posTxt(pos)}</b></span>`:"";
+  let html=`<div class="panel-head"><h2 id="weekTitle">${title}</h2><div class="wknav"><button class="btn small ghost" type="button" data-wk="-1" aria-label="Previous week" ${weekOff<=-12?"disabled":""}>‹</button>${weekOff!==0?`<button class="btn small" type="button" data-wk="0">This week</button>`:""}<button class="btn small ghost" type="button" data-wk="1" aria-label="Next week" ${weekOff>=8?"disabled":""}>›</button></div></div>
+  <div class="week-sub"><span>${fmtShort(ws)} – ${fmtShort(we)}</span>${chip}</div>`;
+  if(adj&&t) html+=`<div class="adj"><span><b>${weekOff===0?"Adjusted for this week.":"This week of the plan is adjusted."}</b> ${esc(adj.summary||"")}</span>${can?`<button class="btn small ghost" type="button" data-resetweek="${cw}">Back to usual week</button>`:""}</div>`;
+  if(!t){ html+=`<p class="note">No weekly structure yet. Set up your usual week under Plan: which sessions on which days, and how long.</p>
+    ${can?`<button class="btn primary" type="button" id="useSuggested">Set up your week</button>`:""}`; el.innerHTML=html; return; }
+  html+=`<div class="days">`+DAYS.map((dn,i)=>{ const n=cw+i; const date=isoDate(fromDayNum(n)); const logged=sessions.filter(s=>s.date===date); const {res,used}=matchDay(t[i]||[],logged);
+    const items=(t[i]||[]).map((it,k)=>{ const ms=res[k]; const done=ms.length>0; const mins=ms.reduce((a,s)=>a+minutesOf(s),0);
+      const rpe=done?avgRpe(ms):null; const swapped=done&&!fulfilled(it,ms); const tooHard=done&&!swapped&&(it.sport==="ride"||it.sport==="run")&&steadyKinds.includes(it.kind)&&rpe>=6; const asKind=done&&it.kind!=="session"&&ms[0].kind!==it.kind?ms[0].kind:null;
+      const state=done?"done":it.optional?"opt":n<todayN?"missed":"todo"; const how=howFor(it);
+      const showHow=!done&&how&&n>=todayN&&n<=todayN+1;
+      return `<div class="sess ${swapped||tooHard?"swapped":state==="done"?"done":state==="missed"?"missed":state==="opt"?"opt":""}" style="--c:${sportC(it.sport)}"${!done&&how&&!showHow?` title="${esc(how)}"`:""}>
+        <span class="st">${swapped?"Easy instead":tooHard?"Too hard":state==="done"?(asKind?"Done as "+esc(asKind):"Done"):state==="opt"?"Optional":state==="missed"?"Missed":n===todayN?"Today":"Planned"}</span>
+        <b>${esc(sportL(it.sport))} · ${esc(it.kind)}</b><span class="m">${done?`${fmtMin(mins)} · RPE ${rpe}`:`${fmtMin(+it.min||0)}${it.note?" · "+esc(it.note):""}`}</span>
+        ${showHow?`<span class="how">${esc(how)}</span>`:""}
+        ${!done&&n<=todayN&&can?`<div class="row-actions" style="margin-top:4px"><button class="btn small" type="button" data-qdone="${i}|${k}|${date}" title="Log it with the planned time; effort is estimated">✓ Done</button><button class="btn small ghost" type="button" data-logplan="${esc(it.sport)}|${esc(it.kind)}|${date}">Details</button></div>`:""}</div>`; }).join("");
+    const extras=logged.filter(s=>!used.has(s.id)).map(s=>`<div class="sess extra" style="--c:${sportC(s.sport)}"><span class="st">Extra</span><b>${esc(sportL(s.sport))} · ${esc(s.kind)}</b><span class="m">${fmtMin(minutesOf(s))} · RPE ${rpeOf(s)}</span></div>`).join("");
+    return `<div class="day ${n===todayN?"today":""}"><div class="day-h"><b>${dn}</b><span>${fromDayNum(n).getDate()}</span></div>${items||(extras?"":`<div class="rest">Rest</div>`)}${extras}</div>`; }).join("")+`</div>`;
+  const nxp=cyclePos(cw+7); const pi=((weekOff===0&&nxp&&!adjNext&&planFor(cw+7))||[]).flat().filter(x=>x.prog);
+  if(pi.length) html+=`<div class="nextline">Next week, ${nxp.recovery?"recovery":"build "+(nxp.week+1)}: ${pi.map(x=>(x.kind==="endurance"||x.kind==="long")?`long ${x.sport==="run"?"run":"ride"} ${fmtMin(x.min)}`:esc(x.note||x.kind)).join(" · ")}${pos&&!pos.recovery&&!nxp.recovery&&!isIntervalDone(cw)?", once this week's intervals are done":""}.</div>`;
+  if(adjNext&&weekOff===0) html+=`<div class="adj next"><span><b>Next week is adjusted.</b> ${esc(adjNext.summary||"")}</span>${can?`<button class="btn small ghost" type="button" data-resetweek="${cw+7}">Undo</button>`:""}</div>`;
+  el.innerHTML=html;
+}
+
+function renderChecks(){ const cs=computeChecks(); $("checks").innerHTML=cs.map(c=>`<li class="check ${c.lvl}"><div><b>${esc(c.t)}</b><span>${esc(c.d)}</span></div></li>`).join("");
+  const n=cs.filter(c=>c.lvl==="warn"||c.lvl==="crit").length; $("tabWarn").textContent=n; $("tabWarn").hidden=!n; $("tabWarn").title=`${n} thing${n===1?"":"s"} to look at`; }
+function svgAxis(W,H,pad,max,ticks){ let g=""; for(const t of ticks){ const y=pad.t+(H-pad.t-pad.b)*(1-t/max); g+=`<line x1="${pad.l}" x2="${W-pad.r}" y1="${y}" y2="${y}" stroke="var(--line)" stroke-width="1"/><text x="${pad.l-6}" y="${y+3}" text-anchor="end">${t}</text>`; } return g; }
+function weeksRange(){ const cw=curWeekKey(); const w=[]; for(let i=11;i>=0;i--) w.push(cw-7*i); return w; }
+function stackChart(id,W,H,weeks,segsOf,label,niceStep){
+  const pad={t:12,r:8,b:26,l:44}; const iw=(W-pad.l-pad.r)/weeks.length, ih=H-pad.t-pad.b; const totals=weeks.map(w=>segsOf(w).reduce((a,s)=>a+s.v,0));
+  const top=Math.max(niceStep*3,...totals); const step=niceStep*Math.max(1,Math.ceil(top/niceStep/5)); const max=Math.ceil(top*1.08/step)*step; const ticks=[]; for(let t=0;t<=max;t+=step) ticks.push(t);
+  let g=svgAxis(W,H,pad,max,ticks); const cw=curWeekKey();
+  weeks.forEach((w,i)=>{ let y=pad.t+ih; const x=pad.l+i*iw+iw*0.18,bw=iw*0.64; for(const s of segsOf(w)){ if(s.v<=0) continue; const h=ih*s.v/max; y-=h; g+=`<rect x="${x}" y="${y}" width="${bw}" height="${h}" fill="${s.c}"><title>Week of ${fmtShort(fromDayNum(w))}: ${s.n} ${Math.round(s.v)}${label}</title></rect>`; }
+    if(i%2===1||w===cw) g+=`<text x="${pad.l+i*iw+iw/2}" y="${H-10}" text-anchor="middle" ${w===cw?'style="fill:var(--accent);font-weight:700"':""}>${w===cw?"now":fromDayNum(w).getDate()+"/"+(fromDayNum(w).getMonth()+1)}</text>`; });
+  $(id).innerHTML=sessions.length?`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(label)} per week">${g}</svg>`:`<p class="note">Fills in as sessions are logged.</p>`;
+}
+function renderCharts(){
+  const weeks=weeksRange();
+  stackChart("loadChart",900,210,weeks,w=>{ const s=weekStats(w); return Object.keys(SPORTS).map(k=>({n:sportL(k),v:s.by[k]||0,c:sportC(k)})); }," load",200);
+  stackChart("mixChart",520,210,weeks,w=>{ const s=weekStats(w); return [{n:"easy",v:s.zone.easy,c:"var(--ok)"},{n:"moderate",v:s.zone.mod,c:"var(--warn)"},{n:"hard",v:s.zone.hard,c:"var(--crit)"}]; }," min",60);
+}
+function profileSvg(prof){
+  if(!prof||!prof.d||prof.d.length<3) return `<p class="note">No profile for this session.</p>`;
+  const W=600,H=150,pad={t:10,r:36,b:22,l:40}; const iw=W-pad.l-pad.r,ih=H-pad.t-pad.b; const dMax=prof.d[prof.d.length-1]||1; const X=d=>pad.l+iw*d/dMax; let g="";
+  const es=prof.e.filter(v=>v!=null),hs=prof.h.filter(v=>v!=null),ps=(prof.p||[]).filter(v=>v!=null); const hasP=ps.length>2;
+  if(hasP){ const hi=Math.max(100,Math.ceil(Math.max(...ps)/50)*50); const Y=v=>pad.t+ih*(1-v/hi);
+    let p=`M${X(prof.d[0])},${pad.t+ih}`; prof.d.forEach((d,i)=>{ if(prof.p[i]!=null) p+=` L${X(d)},${Y(prof.p[i])}`; }); p+=` L${X(dMax)},${pad.t+ih} Z`;
+    g+=`<path d="${p}" fill="var(--climb)" fill-opacity=".28" stroke="var(--climb)" stroke-width="1.1" stroke-linejoin="round"/><text x="${pad.l-4}" y="${pad.t+8}" text-anchor="end">${hi}W</text><text x="${pad.l-4}" y="${pad.t+ih}" text-anchor="end">0</text>`; }
+  else if(es.length>2&&Math.max(...es)-Math.min(...es)>2){ const lo=Math.min(...es),span=Math.max(10,Math.max(...es)-lo); const Y=v=>pad.t+ih*(1-(v-lo)/span);
+    let p=`M${X(prof.d[0])},${pad.t+ih}`; prof.d.forEach((d,i)=>{ if(prof.e[i]!=null) p+=` L${X(d)},${Y(prof.e[i])}`; }); p+=` L${X(dMax)},${pad.t+ih} Z`;
+    g+=`<path d="${p}" fill="var(--accent)" fill-opacity=".2" stroke="var(--accent)" stroke-width="1.2"/><text x="${pad.l-4}" y="${pad.t+8}" text-anchor="end">${Math.round(lo+span)}m</text><text x="${pad.l-4}" y="${pad.t+ih}" text-anchor="end">${Math.round(lo)}m</text>`; }
+  if(hs.length>2){ const lo=Math.min(...hs)-5,hi=Math.max(...hs)+5; const Y=v=>pad.t+ih*(1-(v-lo)/(hi-lo)); let p=""; prof.d.forEach((d,i)=>{ if(prof.h[i]!=null) p+=`${p?"L":"M"}${X(d)},${Y(prof.h[i])} `; });
+    g+=`<path d="${p}" fill="none" stroke="var(--crit)" stroke-width="1.4"/><text x="${W-pad.r+4}" y="${pad.t+8}">${Math.round(hi)}</text><text x="${W-pad.r+4}" y="${pad.t+ih}">${Math.round(lo)}</text>`; }
+  g+=`<text x="${pad.l}" y="${H-6}">0</text><text x="${W-pad.r}" y="${H-6}" text-anchor="end">${prof.x==="min"?Math.round(dMax)+" min":km1(dMax)+" km"}</text>`;
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${hasP?"Power":"Elevation"} and heart rate" style="width:100%;height:auto">${g}</svg><div class="legend">${hasP?'<span><i style="background:var(--climb)"></i>Power</span>':es.length>2&&Math.max(...es)-Math.min(...es)>2?'<span><i style="background:var(--accent)"></i>Elevation</span>':""}${hs.length>2?'<span><i style="background:var(--crit)"></i>Heart rate</span>':""}</div>`;
+}
+function renderRows(){
+  const list=[...sessions].sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:(b.createdAt||0)-(a.createdAt||0)); const can=canWrite&&db;
+  $("sessCount").textContent=list.length?`${list.length} session${list.length>1?"s":""} · ${fmtMin(list.reduce((a,s)=>a+minutesOf(s),0))}`:"";
+  if(!list.length){ $("rows").innerHTML=`<tr><td colspan="10" class="empty">${dbReady?"Nothing logged yet. Drop a GPX file above, or log a climbing session.":"Loading the training log…"}</td></tr>`; return; }
+  $("rows").innerHTML=list.map(s=>{ const open=expanded===s.id;
+    const speed=s.sport==="ride"?(s.km&&s.durationS?(s.km/(s.durationS/3600)).toFixed(1)+" km/h":"–"):s.sport==="run"?fmtPace(s.durationS,s.km):"–";
+    const row=`<tr class="run" data-id="${esc(s.id)}" tabindex="0" aria-expanded="${open}"><td>${esc(fmtDay(s.date))}</td>
+      <td><span class="chip" style="--c:${sportC(s.sport)}">${esc(sportL(s.sport))}</span> <span class="note">${esc(s.kind||"")}${s.where?" · "+esc(s.where):""}${s.grade?" · "+esc(s.grade):""}</span></td>
+      <td class="n">${fmtDur(s.durationS)}</td><td class="n">${s.km?km1(s.km):"–"}</td><td class="n">${speed}</td><td class="n">${s.elevGain||"–"}</td><td class="n">${s.avgHr||"–"}</td>
+      <td class="n">${s.rpe||`<span class="note" title="Estimated">${estRpe(s)}</span>`}</td><td class="n">${Math.round(loadOf(s))}</td>
+      <td class="notes-cell">${s.niggle?`<span class="niggle">Niggle: ${esc(s.niggle)}</span>${s.notes?" · ":""}`:""}${esc(s.notes||"")}${fbMini(s.id)}</td></tr>`;
+    if(!open) return row;
+    return row+`<tr class="detail"><td colspan="10"><div class="detail-grid"><div>${s.profile?profileSvg(s.profile):`<p class="note">${esc(s.notes||"No notes.")}</p>`}</div>
+      <div><dl class="kv"><dt>Time</dt><dd>${fmtDur(s.durationS)}</dd>${s.avgPower?`<dt>Avg power</dt><dd>${s.avgPower} W</dd>`:""}${s.np?`<dt>Normalized power</dt><dd>${s.np} W</dd>`:""}${p20Of(s)?`<dt>Best 20 min</dt><dd>${p20Of(s)} W</dd>`:""}${s.np&&ftpOf()?`<dt>Intensity (IF)</dt><dd>${(s.np/ftpOf()).toFixed(2)}</dd>`:""}${s.avgCad?`<dt>Cadence</dt><dd>${s.avgCad} rpm</dd>`:""}<dt>HR avg / max</dt><dd>${s.avgHr||"–"} / ${s.maxHr||"–"}</dd>
+      ${s.decoupling!=null?`<dt>HR drift</dt><dd>${s.decoupling}%</dd>`:""}<dt>RPE</dt><dd>${rpeOf(s)}${s.rpe?"":" (est.)"}</dd><dt>Feel</dt><dd>${s.feel?s.feel+"/5":"–"}</dd>
+      ${s.grade?`<dt>Top grade</dt><dd>${esc(s.grade)}</dd>`:""}${s.fileName?`<dt>File</dt><dd style="overflow-wrap:anywhere">${esc(s.fileName)}</dd>`:""}</dl>
+      ${can?`<div class="row-actions" style="margin-top:12px"><button class="btn" data-edit="${esc(s.id)}" type="button">Edit</button><button class="btn danger" data-del="${esc(s.id)}" type="button">Delete</button></div>`:""}</div></div>${fbBlock(s.id)}</td></tr>`; }).join("");
+}
+function renderTemplate(){
+  const el=$("tpl"); const t=tplDays(); const can=canWrite&&db; $("tplEdit").hidden=!can||!t; $("tplEdit").textContent=editingTpl?"Done":"Edit";
+  if(!t&&!editingTpl){ el.innerHTML=`<p class="note">No structure yet. Add the sessions you do in a normal week.</p>${can?`<button class="btn primary" type="button" id="useSuggested2">Set up your week</button>`:""}`; return; }
+  if(!editingTpl){ el.innerHTML=`<div class="tpl">`+DAYS.map((d,i)=>`<div class="tpl-day"><b>${d}</b><div class="tpl-items">${(t[i]||[]).length?(t[i]).map(it=>`<div><span class="chip" style="--c:${sportC(it.sport)}">${esc(sportL(it.sport))}</span> ${esc(it.kind)} · ${fmtMin(+it.min||0)}${it.note?` <span class="note">· ${esc(it.note)}</span>`:""}${it.optional?` <span class="note">(optional)</span>`:""}</div>`).join(""):`<span class="note" style="padding-top:6px">Rest</span>`}</div></div>`).join("")+`</div>
+      <p class="note" style="margin:10px 0 0">${fmtMin(plannedMin())} a week across ${plannedCount()} sessions, plus optional ones.</p>`; return; }
+  const d=tplDraft; el.innerHTML=`<div class="tpl">`+DAYS.map((dn,i)=>`<div class="tpl-day"><b>${dn}</b><div class="tpl-items">${d[i].map((it,j)=>`<div class="tpl-item">
+      <select data-tpl="${i}.${j}.sport" aria-label="${dn} sport">${Object.keys(SPORTS).map(k=>`<option value="${k}" ${it.sport===k?"selected":""}>${esc(SPORTS[k].label)}</option>`).join("")}</select>
+      <select data-tpl="${i}.${j}.kind" aria-label="${dn} type">${SPORTS[it.sport].kinds.map(k=>`<option ${it.kind===k?"selected":""}>${k}</option>`).join("")}</select>
+      <input type="number" min="5" step="5" data-tpl="${i}.${j}.min" value="${+it.min||0}" aria-label="${dn} minutes">
+      <button class="btn small ghost" type="button" data-tplrm="${i}.${j}" aria-label="Remove">✕</button>
+      <input type="text" class="tpl-note" data-tpl="${i}.${j}.note" value="${esc(it.note||"")}" placeholder="Note (optional)" aria-label="${dn} note">
+      <label class="tpl-opt"><input type="checkbox" data-tpl="${i}.${j}.optional" ${it.optional?"checked":""}> optional</label></div>`).join("")}
+      <button class="btn small ghost" type="button" data-tpladd="${i}" style="justify-self:start">+ Add</button></div></div>`).join("")+`</div>
+    <div class="row-actions" style="margin-top:10px"><button class="btn primary" type="button" id="tplSave">Save structure</button><button class="btn ghost" type="button" id="tplCancel">Cancel</button><span class="err" id="tplErr" hidden></span></div>`;
+}
+function renderGoals(){ const can=canWrite&&db; const list=[...goals].sort((a,b)=>(a.date||"9")<(b.date||"9")?-1:1);
+  $("goals").innerHTML=list.length?list.map(g=>`<li class="goal"><div><b>${esc(g.title)}</b><span>${g.date?fmtShort(parseDate(g.date))+" "+parseDate(g.date).getFullYear()+" · ":""}${esc({ride:"Ride",climb:"Climb",run:"Run",mixed:"Mixed / mountain"}[g.sport]||g.sport)}${g.notes?" · "+esc(g.notes):""}</span></div>${can?`<button class="btn small danger" type="button" data-gdel="${esc(g.id)}">Remove</button>`:""}</li>`).join(""):`<li class="note">No goals yet. Until there is one, the aim is consistency, a big easy base and climbing movement quality.</li>`;
+  $("goalAdd").hidden=!can; }
+function renderCoach(){ if(!coaching||!coaching.text) return; $("coachMeta").textContent=`Last notes ${new Date(coaching.createdAt).toLocaleString("en-GB",{weekday:"short",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}, based on ${coaching.count} logged session${coaching.count===1?"":"s"}.`; $("coachOut").innerHTML=mdLite(coaching.text); }
+function mdLite(t){ const lines=String(t).split(/\r?\n/); let h="",inL=false; const inl=s=>esc(s).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>");
+  for(const raw of lines){ const l=raw.trim(); const m=l.match(/^[-*•]\s+(.*)/); if(m){ if(!inL){h+="<ul>";inL=true;} h+=`<li>${inl(m[1])}</li>`; continue; } if(inL){h+="</ul>";inL=false;} if(!l) continue; const hh=l.match(/^#+\s*(.*)/); h+=hh?`<p><b>${inl(hh[1])}</b></p>`:`<p>${inl(l)}</p>`; }
+  if(inL) h+="</ul>"; return h; }
+function numbersTxt(){ const ftp=ftpOf(),lt=lthrOf(),hm=hrMaxOf(),w=+profile.weight||0,rh=+profile.restHr||0; const parts=[];
+  parts.push(ftp?`FTP ${ftp} W${w?` (${(ftp/w).toFixed(2)} W/kg)`:""}: zone 2 up to ${Math.round(.75*ftp)} W, threshold zone ${Math.round(.90*ftp)+1}–${Math.round(1.05*ftp)} W`:"FTP not set");
+  parts.push(lt?`threshold HR ${lt}`:"threshold HR not set"); parts.push(hm?`max HR ${hm}`:"max HR not set"); if(rh) parts.push(`resting HR ${rh}`); if(w) parts.push(`weight ${w} kg`);
+  if(hrZ2Top()) parts.push(`HR zone 2 up to ${hrZ2Top()} bpm`); return parts.join("; ")+"."; }
+function renderNumbers(){ const ftp=ftpOf(),lt=lthrOf(),hm=hrMaxOf(),w=+profile.weight||0;
+  $("wkg").textContent=ftp&&w?`${(ftp/w).toFixed(2)} W/kg`:"";
+  const Z=[["Z1","Recovery",.55],["Z2","Endurance",.75],["Z3","Tempo",.90],["Z4","Threshold",1.05],["Z5","VO2max",1.20],["Z6","Anaerobic",null]];
+  const ht=lt?[.68,.83,.94,1.05,null].map(f=>f&&f*lt):hm?[.66,.78,.87,.93,1].map(f=>f*hm):null; const H=!!ht;
+  const cell=(tops,i,u)=>{ if(!tops||i>=tops.length) return "–"; const lo=i?Math.round(tops[i-1])+1:0, hi=tops[i]!=null?Math.round(tops[i]):null; return !lo?`under ${hi+1}${u}`:hi!=null?`${lo}–${hi}${u}`:`${lo}${u}+`; };
+  const pt=ftp?Z.map(z=>z[2]&&z[2]*ftp):null;
+  if(!ftp&&!H){ $("zones").innerHTML=`<p class="note">Add your FTP and a heart rate value to see your zones.</p>`; return; }
+  $("zones").innerHTML=`<table class="zones"><thead><tr><th>Zone</th><th class="n">Power</th><th class="n">Heart rate</th></tr></thead><tbody>${Z.map(([z,n],i)=>`<tr><th>${z} ${n}</th><td class="n">${cell(pt,i," W")}</td><td class="n">${cell(ht,i,"")}</td></tr>`).join("")}</tbody></table>
+    <p class="note" style="margin:6px 0 0">Power zones from FTP. Heart-rate zones from ${lt?"threshold HR":"max HR (add threshold HR for better zones)"}.</p>`; }
+function renderBench(){ const el=$("bench"); const now=dayNum(today()); const ftp=ftpOf(); const can=canWrite&&db;
+  const pts=sessions.filter(s=>s.sport==="ride").map(s=>({s,p:p20Of(s),d:dayNum(parseDate(s.date))})).filter(x=>x.p&&x.d<=now&&now-x.d<=84).sort((a,b)=>a.d-b.d);
+  if(!pts.length){ el.innerHTML=`<p class="note">Your best 20-minute power from each trainer ride shows here once TCX files with power are in. Races and the recovery-week test are the ones that count: 95% of an all-out 20 minutes is a fair FTP estimate.</p>`; return; }
+  const best=bestP20(42); const W=520,H=190,pad={t:14,r:12,b:24,l:40}; const iw=W-pad.l-pad.r, ih=H-pad.t-pad.b;
+  const d0=Math.min(pts[0].d,now-28), span=Math.max(1,now-d0); const vals=pts.map(x=>x.p).concat(ftp?[ftp]:[]); const lo=Math.floor((Math.min(...vals)-15)/20)*20, hi=Math.ceil((Math.max(...vals)+12)/20)*20; const stepV=hi-lo>120?40:20;
+  const X=d=>pad.l+iw*(d-d0)/span, Y=v=>pad.t+ih*(1-(v-lo)/(hi-lo)); let g="";
+  for(let v=lo;v<=hi;v+=stepV) g+=`<line x1="${pad.l}" x2="${W-pad.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)" stroke-width="1"/><text x="${pad.l-6}" y="${Y(v)+3}" text-anchor="end">${v}</text>`;
+  if(ftp) g+=`<line x1="${pad.l}" x2="${W-pad.r}" y1="${Y(ftp)}" y2="${Y(ftp)}" stroke="var(--muted)" stroke-dasharray="4 3" stroke-width="1.2"/><text x="${pad.l+4}" y="${Y(ftp)-4}">FTP ${ftp} W</text>`;
+  for(const x of pts){ const hard=QUALITY.includes(x.s.kind); const top=best&&best.s.id===x.s.id;
+    g+=`<circle cx="${X(x.d)}" cy="${Y(x.p)}" r="${top?6:4.5}" fill="${hard?"var(--accent)":"var(--other)"}" stroke="var(--surface)" stroke-width="1.5"><title>${fmtDay(x.s.date)} · ${x.s.kind}: ${x.p} W for 20 min</title></circle>`; }
+  g+=`<text x="${pad.l}" y="${H-6}">${fmtShort(fromDayNum(d0))}</text><text x="${W-pad.r}" y="${H-6}" text-anchor="end">today</text>`;
+  let txt="No ride with 20 minutes of power in the last 6 weeks.", btn="";
+  if(best){ const est=Math.round(.95*best.p); txt=`Best 20 minutes in the last 6 weeks: <b>${best.p} W</b>, ${esc(best.s.kind)} on ${fmtDay(best.s.date)}. That suggests an FTP of about <b>${est} W</b>${ftp?`; yours is set to ${ftp} W`:""}.`;
+    const show=!ftp||(best.s.kind==="test"?Math.abs(est-ftp)>=3:est>=ftp*1.02); if(show&&can) btn=`<div class="row-actions" style="margin-top:8px"><button class="btn small primary" type="button" data-setftp="${est}">Set FTP to ${est} W</button></div>`; }
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Best 20-minute power per ride">${g}</svg><div class="legend"><span><i style="background:var(--accent);border-radius:50%"></i>Race, test or intervals</span><span><i style="background:var(--other);border-radius:50%"></i>Other rides</span></div><p class="note" style="margin:8px 0 0">${txt} Only all-out efforts tell you anything; easy rides sit low by design.</p>${btn}`; }
+function renderProgression(){ const el=$("prog"); const can=canWrite&&db; const cw=curWeekKey(); $("progLabel").textContent="";
+  if(!tplDays()){ el.innerHTML=`<p class="note">Set up your weekly structure first.</p>`; return; }
+  const explain=`The quality session (bike intervals or a run workout) climbs a ladder and only steps up once the previous set is done. The long session grows each build week: 15 minutes for a ride, about 10% for a run. Every fourth week is a recovery week: about a third less long-session time, and a 20-minute test in place of the quality session.`;
+  if(!progOn()){ el.innerHTML=`<p class="note" style="margin:0 0 10px">Off: the same week repeats. ${explain}</p>${can?`<div class="row-actions"><button class="btn primary" type="button" data-progstart="1">Start a 4-week cycle this week</button></div>`:""}`; return; }
+  const pos=cyclePos(cw); const start=+progression.start;
+  if(!pos){ el.innerHTML=`<p class="note">Starts in the week of ${fmtShort(fromDayNum(start))}. ${explain}</p>`; return; }
+  $("progLabel").textContent=posTxt(pos); const c0=start+28*pos.cycle; const step=stepFor(cw);
+  const rows=[0,1,2,3].map(i=>{ const wk=c0+7*i; const items=(progressedPlan(wk)||[]).flat(); const iv=items.find(x=>x.prog&&(isQualityItem(x)||x.kind==="test")); const lr=items.find(x=>x.prog&&isLongItem(x)); const rec=i===3;
+    const st=wk<cw?(rec?(sessions.some(s=>weekKey(s.date)===wk&&s.kind==="test")?"Test done":"No test logged"):(isIntervalDone(wk)?"Done":"Missed: step repeats")):wk===cw?(!rec&&isIntervalDone(wk)?"Done":"This week"):(rec?"":"If the sets before it are done");
+    return `<tr class="${wk===cw?"cur":""}"><th>${rec?"Recovery":"Build "+(i+1)}</th><td>${fmtShort(fromDayNum(wk))}</td><td>${iv?esc(iv.note||iv.kind):"–"}</td><td class="n">${lr?fmtMin(lr.min):"–"}</td><td>${st}</td></tr>`; }).join("");
+  el.innerHTML=`<p class="note" style="margin:0 0 10px">${explain}</p><div class="tablewrap"><table class="prog"><thead><tr><th>Week</th><th>From</th><th>Quality session</th><th class="n">Long session</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <div class="ladder" aria-label="Interval ladder">${LADDER.map(([n,m],i)=>`<span class="${i<step?"done":i===step?"cur":""}">${n} × ${m}</span>`).join("")}</div>
+    <p class="note" style="margin:8px 0 0">Interval ladder, minutes at threshold (95–100% of FTP on the bike). You are on step ${step+1} of ${LADDER.length}.</p>
+    ${can?`<div class="row-actions" style="margin-top:12px"><button class="btn small" type="button" data-progrestart="1">Restart the cycle from this week</button><button class="btn small ghost" type="button" data-progoff="1">Turn off</button></div>`:""}`; }
+function progTxt(){ const cw=curWeekKey(); const pos=cyclePos(cw); if(!pos) return "Off: the same week repeats.";
+  const step=stepFor(cw); const [n,m]=LADDER[step]; const lr=(planFor(cw)||[]).flat().find(x=>x.prog&&isLongItem(x));
+  return `4-week cycles: three build weeks, then a recovery week with a 20-minute test in place of the quality session and the long session cut by about a third. This is ${posTxt(pos).toLowerCase()}. The quality session (bike intervals or run workout) follows a ladder at threshold (${LADDER.map(([a,b])=>a+"x"+b).join(", ")} min); currently on step ${step+1} (${n} x ${m} min). A step only advances when the previous quality session was really done (logged at RPE 5 or more); a missed or soft session repeats the step.${lr?` The long ${lr.sport==="run"?"run":"ride"} grows each build week; this week it is ${lr.min} min.`:""} ${isIntervalDone(cw)?"This week's quality session is done.":pos.recovery?"":"This week's quality session is not done yet."}`; }
+function renderAll(){ renderHeader(); renderNumbers(); renderWeek(); renderTiles(); renderChecks(); renderCharts(); renderBench(); renderRows(); renderTemplate(); renderProgression(); renderGoals(); renderCoach(); }
+
+// ---------- drafts ----------
+let seq=0;
+function addDraft(d){ drafts.push({key:"d"+(++seq),sport:"ride",kind:null,feel:null,niggle:"",notes:"",...d}); const x=drafts[drafts.length-1]; if(!x.kind||!SPORTS[x.sport].kinds.includes(x.kind)) x.kind=x.sport==="ride"?"endurance":SPORTS[x.sport].kinds[0]; renderDrafts(); }
+function renderDrafts(){ const can=canWrite&&db;
+  $("drafts").innerHTML=drafts.map(d=>{ const k=d.key; const isMove=d.sport==="ride"||d.sport==="run"||d.sport==="other";
+    return `<div class="draft" data-key="${k}"><div class="draft-head"><h3>${d.editingId?"Edit session":d.fileName?"New session from GPX":"New session"}</h3><span class="src">${esc(d.fileName||"")}${d.trackName?" · "+esc(d.trackName):""}</span></div>
+    <div class="fields">
+      <div class="field"><label for="${k}-date">Date</label><input type="date" id="${k}-date" value="${esc(d.date||isoDate(today()))}"></div>
+      <div class="field"><label for="${k}-sport">Sport</label><select id="${k}-sport">${Object.keys(SPORTS).map(s=>`<option value="${s}" ${d.sport===s?"selected":""}>${esc(SPORTS[s].label)}</option>`).join("")}</select></div>
+      <div class="field"><label for="${k}-kind">Type</label><select id="${k}-kind">${SPORTS[d.sport].kinds.map(s=>`<option ${d.kind===s?"selected":""}>${s}</option>`).join("")}</select></div>
+      ${d.sport==="ride"?`<div class="field"><label for="${k}-where">Where</label><select id="${k}-where">${["outdoor","indoor"].map(t=>`<option ${d.where===t?"selected":""}>${t}</option>`).join("")}</select></div>`:""}
+      <div class="field"><label for="${k}-dur">Time</label><input type="text" id="${k}-dur" placeholder="1:30 or 90 (min)" value="${d.durationS?fmtDur(d.durationS):""}"></div>
+      ${isMove?`<div class="field"><label for="${k}-km">Distance km</label><input type="number" step="0.01" min="0" id="${k}-km" value="${d.km??""}"></div>
+      <div class="field"><label for="${k}-elev">Climb m</label><input type="number" min="0" id="${k}-elev" value="${d.elevGain??""}"></div>`:""}
+      ${d.sport==="climb"?`<div class="field"><label for="${k}-grade">Top grade</label><input type="text" id="${k}-grade" placeholder="e.g. level 6, 6a" value="${esc(d.grade||"")}"></div>`:""}
+      <div class="field"><label for="${k}-hr">Avg HR</label><input type="number" min="0" id="${k}-hr" value="${d.avgHr??""}"></div>
+      ${d.sport==="ride"?`<div class="field"><label for="${k}-pw">Avg power W</label><input type="number" min="0" id="${k}-pw" value="${d.avgPower??""}"></div>`:""}
+      <div class="field"><label for="${k}-rpe">Effort RPE 1–10</label><input type="number" min="1" max="10" id="${k}-rpe" placeholder="${estRpe(d)}" value="${d.rpe??""}"></div>
+      <div class="field wide"><label id="${k}-feel-l">How did it feel?</label><div class="feel" role="group" aria-labelledby="${k}-feel-l">${[["1","Awful"],["2","Flat"],["3","OK"],["4","Good"],["5","Great"]].map(([v,l])=>`<button type="button" data-feel="${v}" aria-pressed="${String(d.feel)===v}">${v} · ${l}</button>`).join("")}</div></div>
+      <div class="field wide"><label for="${k}-nig">Niggles (where, how bad)</label><input type="text" id="${k}-nig" placeholder="Leave empty if nothing hurt" value="${esc(d.niggle||"")}"></div>
+      <div class="field wide"><label for="${k}-notes">Notes</label><textarea id="${k}-notes" placeholder="${d.sport==="climb"?"What the session was about: movement, footwork, falls, rests, what felt off":"Session done, how the legs felt, fuelling"}">${esc(d.notes||"")}</textarea></div>
+    </div><div class="err" id="${k}-err" hidden></div>
+    <div class="row-actions" style="justify-content:flex-end"><button class="btn ghost" type="button" data-cancel="${k}">Discard</button><button class="btn primary" type="button" data-save="${k}" ${can?"":"disabled"}>${d.editingId?"Save changes":"Save session"}</button></div></div>`; }).join(""); }
+function syncDraft(card){ const d=drafts.find(x=>x.key===card.dataset.key); if(!d) return null; const k=d.key; const v=id=>{const el=$(`${k}-${id}`);return el?el.value:undefined;};
+  const map={date:"date",kind:"kind",where:"where",km:"km",elev:"elevGain",grade:"grade",hr:"avgHr",pw:"avgPower",rpe:"rpe",nig:"niggle",notes:"notes"};
+  for(const [id,f] of Object.entries(map)){ const x=v(id); if(x!==undefined) d[f]=x; } const dur=v("dur"); if(dur!==undefined){ const p=parseDur(dur); if(!Number.isNaN(p)) d.durationS=p; } return d; }
+async function saveDraft(k,btn){ const card=document.querySelector(`.draft[data-key="${k}"]`); const d=syncDraft(card); const err=$(`${k}-err`);
+  const dur=parseDur($(`${k}-dur`).value); const num=x=>x===""||x==null?null:Math.round(parseFloat(x)); const rpe=num(d.rpe);
+  if(!d.date){err.textContent="Pick a date.";err.hidden=false;return;}
+  if(!(dur>0)){err.textContent="Enter the time as h:mm (1:30) or in minutes (90).";err.hidden=false;return;}
+  const km=parseFloat(d.km); const body={date:d.date,sport:d.sport,kind:d.kind,where:d.sport==="ride"?(d.where||"outdoor"):null,durationS:dur,
+    km:km>0?Math.round(km*100)/100:null,elevGain:num(d.elevGain),avgHr:num(d.avgHr),avgPower:d.sport==="ride"?num(d.avgPower):null,np:d.sport==="ride"?(d.np??null):null,p20:d.sport==="ride"?(d.p20??null):null,avgCad:d.avgCad??null,rpe:rpe>=1&&rpe<=10?rpe:null,
+    feel:d.feel?+d.feel:null,niggle:String(d.niggle||"").trim().slice(0,200),notes:String(d.notes||"").trim().slice(0,1500),grade:d.sport==="climb"?String(d.grade||"").trim().slice(0,40):null,
+    elevLoss:d.elevLoss??null,maxHr:d.maxHr??null,decoupling:d.decoupling??null,elapsedS:d.elapsedS??null,fileName:d.fileName||null,profile:d.profile||null};
+  err.hidden=true; btn.disabled=true; btn.textContent="Saving…"; const id=d.editingId||`${body.date}-${Math.random().toString(36).slice(2,8)}`; const ex=sessions.find(x=>x.id===id);
+  try{ await db.collection("sessions").doc(id).set({...body,createdAt:ex?.createdAt||Date.now(),updatedAt:Date.now()}); drafts=drafts.filter(x=>x.key!==k); renderDrafts();
+    if(!d.editingId&&!isRoutine(body)){ fbBodies[id]={id,...body}; fbRecent.push(id); requestFeedback(id,"short"); } }
+  catch(e){ btn.disabled=false; btn.textContent=d.editingId?"Save changes":"Save session"; err.textContent=e?.code==="invalid_argument"?"Saving was refused. You need edit access to this page.":e?.code==="quota_exceeded"?"The log is full. Delete old sessions to make room.":"Couldn't save just now. Try again in a moment."; err.hidden=false; } }
+async function handleFiles(files){ $("fileErr").hidden=true; const errs=[];
+  for(const f of files){ if(!/\.(gpx|tcx)$/i.test(f.name)&&!/xml/.test(f.type)){ errs.push(`${f.name}: only GPX and TCX files can be read here.`); continue; }
+    try{ const s=parseTrack(await f.text()); if(/whoosh|zwift|rouvy/i.test(f.name)){ s.sport="ride"; s.where="indoor"; } if(s.km==null) delete s.km;
+      const dayPlan=planFor(weekKey(s.date))?.[dow(parseDate(s.date))]||[]; const planned=dayPlan.find(it=>it.sport===s.sport&&it.kind!=="commute");
+      const commute=s.sport==="ride"&&s.where==="outdoor"&&dayPlan.some(it=>it.kind==="commute")&&(s.durationS||0)<75*60;
+      const easyData=(dataRpe(s)??5)<=4;
+      s.kind = commute ? "commute" : planned&&!(easyData&&QUALITY.includes(planned.kind)) ? planned.kind : (s.sport==="ride" ? "endurance" : "easy");
+      addDraft({...s,fileName:f.name}); }
+    catch(e){ errs.push(`${f.name}: ${e.message}`); } }
+  if(errs.length){ $("fileErr").innerHTML=errs.map(esc).join("<br>"); $("fileErr").hidden=false; } }
+
+// ---------- coaching ----------
+let coachCtl=null;
+function coachPrompt(){
+  return `${coachContext()}
+
+${COACH_RULES()}
+
+${PT`Write short coaching notes addressed to him ("you"). Plain text, no headings or tables. Use three labelled parts, each starting with the label in **bold** on its own line: **How it's going**, **This week**, **Watch for**. Each part is at most 2 short sentences or 3 short "- " bullets. Say only what matters most; skip anything he can read off the page himself, no restating of totals, no preamble or sign-off. Be specific to his sessions and notes; do not invent sessions. Never advise training through pain; for pain that persists, suggest a physiotherapist. Under 140 words.`}`;
+}
+function sessDesc(s){ return `${s.date} ${DAYS[dow(parseDate(s.date))]} ${s.sport}/${s.kind}${s.where?"/"+s.where:""}: ${fmtMin(minutesOf(s))}${s.km?`, ${km1(s.km)} km`:""}${s.elevGain?`, ${s.elevGain} m+`:""}, RPE ${rpeOf(s)}${s.rpe?"":" (est)"}${s.avgHr?`, HR ${s.avgHr}`:""}${s.avgPower?`, avg ${s.avgPower} W`:""}${s.np?`, NP ${s.np} W`:""}${p20Of(s)?`, best 20 min ${p20Of(s)} W`:""}${s.np&&ftpOf()?`, IF ${(s.np/ftpOf()).toFixed(2)}`:""}${s.avgCad?`, cad ${s.avgCad}`:""}${s.decoupling!=null&&steadyKinds.includes(s.kind)?`, HR drift ${s.decoupling}%`:""}${s.grade?`, top ${s.grade}`:""}, feel ${s.feel||"?"}/5${s.niggle?", NIGGLE: "+s.niggle:""}${s.notes?", notes: "+s.notes:""}${s.quick?" [quick]":""}`; }
+function coachContext(){
+  const cw=curWeekKey(); const t=tplDays(); const now=dayNum(today());
+  const tplTxt=t?DAYS.map((d,i)=>`${d}: ${(t[i]||[]).map(x=>`${x.sport} ${x.kind} ${x.min} min${x.note?" ("+x.note+")":""}${x.optional?" [optional]":""}`).join(", ")||"rest"}`).join("\n"):"(no weekly structure set)";
+  const goalTxt=goals.length?goals.map(g=>`- ${g.title}${g.date?" ("+g.date+")":""}, ${g.sport}${g.notes?": "+g.notes:""}`).join("\n"):"(no goals set yet)";
+  const recent=[...sessions].filter(s=>now-dayNum(parseDate(s.date))<=42).sort((a,b)=>a.date<b.date?-1:1).slice(-90);
+  const sessTxt=recent.map(sessDesc).join("\n")||"(nothing logged in the last 6 weeks)";
+  const wkTxt=weeksRange().slice(-8).map(w=>{const s=weekStats(w); return `week of ${isoDate(fromDayNum(w))}: ${fmtMin(s.min)}, load ${Math.round(s.load)}, ${s.n} sessions, easy/mod/hard min ${Math.round(s.zone.easy)}/${Math.round(s.zone.mod)}/${Math.round(s.zone.hard)}`;}).join("\n");
+  const checks=computeChecks().map(c=>`- [${c.lvl||"info"}] ${c.t}: ${c.d}`).join("\n");
+  return `You are coaching ${ATH}, an adult amateur athlete who wants to train with structure. Sports, level, constraints and history are in the background below; goals, if any, are listed under GOALS.
+
+Today is ${isoDate(today())} (${DAYS[dow(today())]}), current week starts ${isoDate(fromDayNum(cw))}.
+
+BACKGROUND (in the athlete's own words)
+${profile.about||"(not filled in)"}
+
+NUMBERS
+${numbersTxt()} RPE marked (est) was not entered by the athlete: it is estimated from power or heart rate, or a typical value for that session type. Sessions marked [quick] were logged with one tap as done to plan, without details.
+
+GOALS
+${goalTxt}
+
+USUAL WEEK (the base structure, before progression)
+${tplTxt}
+
+PROGRESSION
+${progTxt()}
+
+THIS WEEK'S ACTUAL PLAN${weekPlans[String(cw)]?` (adjusted by hand: ${weekPlans[String(cw)].summary||"no reason given"})`:""}
+${daysTxt(planFor(cw))}
+${weekPlans[String(cw+7)]?`\nNEXT WEEK IS ADJUSTED (${weekPlans[String(cw+7)].summary||"no reason given"}):\n${daysTxt(planFor(cw+7))}\n`:""}
+WEEKLY TOTALS (time, load = RPE x minutes, ride and run minutes by effort zone, climbing excluded; easy RPE 1-4, moderate 5-6, hard 7-10)
+${wkTxt}
+
+SESSIONS, LAST 6 WEEKS (oldest first)
+${sessTxt}
+
+AUTOMATIC CHECKS
+${checks}
+`;
+}
+const COACH_RULES=()=>P(`HOW TO COACH
+You are a tough but fair coach. Your job is to make him better, not to make him feel good and not to agree with him. He has asked for exactly this: push him, be direct when he slacks, and never push him into overtraining or injury.
+
+Two ways to get it wrong, and you are equally hard on both
+- Slacking: a planned session skipped, cut short, or ridden easy on a quality day, with no reason given in his notes. Say so in plain words: name the session and the day, and say what it costs him. Easy volume is not a substitute for the hard session; if his only hard effort in a week is the race, that is one quality session, not two.
+- Overdoing: an easy or recovery day ridden hard, a commute pushed above zone 2, a session run well past its planned time, an unplanned extra session, a skipped rest day, hard days back to back, a jump in weekly load or in running minutes, or training on a niggle. Treat this exactly as seriously as slacking and be just as blunt. It is not dedication, it is a mistake: it blunts the next quality session and is how overuse injuries start. Name the session and the day, say what it costs, and say what he cuts next to pay for it. Never praise it as commitment, and do not accept "I felt good" as an excuse: feeling good on an easy day is the plan working, not a reason to go harder.
+- Once is a slip. Twice in a row is a pattern, in either direction: call it a pattern and make him choose, either follow the plan or change it honestly. A plan he ignores is worse than a plan that fits.
+- Do not be argued out of an assessment, in either direction. Change your view for new information (pain, illness, sleep, work, how a session actually went), never because he pushes back or would like a different answer.
+
+Push
+- When he is consistent, recovering well (feel 3/5 or better, no niggles, load steady) and hitting his sessions, raise the bar with one concrete next step and hold him to it next time: a longer or harder interval set, more endurance time, a harder technical focus. Do not let him coast.
+- When he is tired but not hurt and the load is normal, tell him to do the session anyway, possibly a reduced version. Ordinary tiredness and low motivation are not reasons to skip.
+
+The line you never cross
+- Never push through pain, a niggle, illness, feel scores that keep dropping, or several bad nights. Never plan two hard days back to back. Keep at least one full rest day in every seven. Keep weekly load within about 10–15% of his four-week average unless he has been building steadily. Stay conservative with finger tendons (climbing, hangboard) and with running, which adapt far slower than his cardio fitness.
+- When those signs say back off, backing off is the tough call. Hold him to resting as firmly as you hold him to working, say no if he wants to add more than is sensible, and give the reason. If he has already overdone it, take something out of the coming days rather than only warning him.
+- Telling the two apart: slacking is skipping with no reason while fresh; sensible rest has a reason in the data or his notes. If you cannot tell which it was, ask him rather than assume either way.
+
+Tone
+- Direct, specific, plain. Lead with the most important thing, including when it is unwelcome. No flattery, no cheerleading, no softening a problem into a compliment, no hedging everything.
+- Also no insults, sarcasm, guilt-tripping or macho talk. Tough means honest and demanding, not harsh.
+- Praise only what the data earns, in a clause, with the reason. Never advise training through pain; for pain that persists, tell him to see a physiotherapist.
+
+His situation
+- Read the background for injuries, constraints and preferences, and follow them. When it mentions an injury or a comeback, be conservative with that sport: add its minutes by about 10% a week at most, prefer a day between sessions, and treat any return of the old complaint as a reason to back off.
+- Commute rides, if he has them, are real volume; judge whether they are kept easy.
+- With a dated goal, orient everything to it and say plainly whether he is on track. Without one, the aim is consistency, a large easy aerobic base with one or two quality sessions a week, and skill work where it applies. If a goal is set, orient the advice to it.
+- Climbing: never give beta or advice on how to solve a specific boulder problem or route. Comment only on movement quality, body position, balance, pacing and rest, and imbalances (e.g. pushing vs pulling, left vs right, too little rest between attempts).
+- If the structure itself doesn't fit his real week (repeatedly missed sessions), say what to change in it.
+- Progression: hold him to this week's prescription, the quality set and the long-session time, no more and no less. Doing a bigger set than prescribed is overdoing; a missed or soft set repeats the step, so say that. In the recovery week hold him to the lighter week and to pacing the test properly. If he reports fatigue or the data shows it, keep him on the current step or lighten the week with a proposal rather than letting the ladder run on.
+- Benchmark: on the bike, best 20-minute power from races and tests is his measure of progress; for running, the 20-minute time trial and heart rate at a given pace. Use them when judging whether training is working and whether his numbers are set right.
+- When the data is too thin to judge, say so.
+`);
+async function runCoach(){ if(!sample) return; const btn=$("coachBtn"),stop=$("coachStop"),out=$("coachOut"); coachCtl=new AbortController(); btn.disabled=true; stop.hidden=false; out.innerHTML=`<p class="note">Thinking…</p>`;
+  try{ const {text,truncated}=await sample(coachPrompt(),{signal:coachCtl.signal,cache:false,onText:({text})=>{out.innerHTML=mdLite(text);}});
+    out.innerHTML=mdLite(text)+(truncated?`<p class="note">Cut short. Ask again for the rest.</p>`:""); coaching={text,createdAt:Date.now(),count:sessions.length}; renderCoach();
+    if(db&&canWrite){ try{ await db.doc("coaching/latest").set(coaching); }catch(_){} } }
+  catch(e){ if(e?.code==="cancelled"){ out.innerHTML=e.text?mdLite(e.text):""; if(!e.text) renderCoach(); }
+    else if(["not_granted","sampling_disabled","not_declared","capability_disabled","capability_removed"].includes(e?.code)) hideCoach();
+    else if(e?.code==="rate_limited") out.innerHTML=(e.text?mdLite(e.text):"")+`<p class="err">The coach is busy right now. Try again in a few minutes.</p>`;
+    else out.innerHTML=(e?.text?mdLite(e.text):"")+`<p class="err">The notes were interrupted. Try again.</p>`; }
+  finally{ btn.disabled=false; stop.hidden=true; coachCtl=null; } }
+
+// ---------- per-session feedback ----------
+const fb={}, fbBodies={}; let fbRecent=[]; let fbChain=Promise.resolve();
+function fbFor(id){ const s=sessions.find(x=>x.id===id)||fbBodies[id]; const f=fb[id]||{}; return {s,short:f.short??s?.coachShort??"",long:f.long??s?.coachLong??"",busy:f.busy||null,err:f.err||""}; }
+function fbMini(id){ const f=fbFor(id); if(f.short) return `<div class="fb-mini"><b>Coach:</b> ${esc(f.short.replace(/\*\*/g,""))}</div>`; if(f.busy==="short") return `<div class="fb-mini">Coach is looking…</div>`; return ""; }
+function fbBlock(id,title){ const f=fbFor(id); if(!sample&&!f.short) return "";
+  let h=`<div class="fb"><div class="fb-head"><span class="fb-l">Coach${title?` · ${esc(title)}`:""}</span>${title?`<button class="btn small ghost" type="button" data-fbx="${esc(id)}" aria-label="Dismiss">✕</button>`:""}</div>`;
+  if(f.short) h+=`<div class="fb-t">${mdLite(f.short)}</div>`; else if(f.busy==="short") h+=`<div class="fb-t note">Looking at this session…</div>`;
+  if(f.long) h+=`<div class="fb-t fb-long">${mdLite(f.long)}</div>`; else if(f.busy==="long") h+=`<div class="fb-t fb-long note">Writing more…</div>`;
+  if(f.err) h+=`<div class="err">${esc(f.err)}</div>`;
+  if(sample&&!f.busy){ if(!f.short) h+=`<div class="row-actions"><button class="btn small" type="button" data-fb="${esc(id)}|short">Get feedback</button></div>`; else if(!f.long) h+=`<div class="row-actions"><button class="btn small" type="button" data-fb="${esc(id)}|long">More</button></div>`; }
+  return h+`</div>`; }
+function renderFbRecent(){ $("fbRecent").innerHTML=fbRecent.slice(-3).reverse().map(id=>{ const s=fbFor(id).s; if(!s) return ""; return fbBlock(id,`${sportL(s.sport)} ${s.kind}, ${fmtDay(s.date)}`); }).join(""); }
+function renderFb(){ renderRows(); renderFbRecent(); }
+function requestFeedback(id,mode){ if(!sample) return; fb[id]={...(fb[id]||{}),busy:mode,err:""}; renderFb(); fbChain=fbChain.then(()=>genFeedback(id,mode)).catch(()=>{}); }
+async function genFeedback(id,mode){
+  const s=sessions.find(x=>x.id===id)||fbBodies[id]; if(!s||!sample){ fb[id]={...fb[id],busy:null}; renderFb(); return; }
+  const short=fbFor(id).short;
+  const task=mode==="short"
+    ? PT`He just logged this session from ${fmtDay(s.date)}${s.date!==isoDate(today())?` (today is ${fmtDay(isoDate(today()))})`:""}:\n${sessDesc(s)}\n\nGive one or two sentences of feedback on this session specifically: was the effort right for what his structure planned that day (e.g. commute kept in zone 2, Monday kept easy, intervals actually hard; use his FTP and max HR where the data allows), and what it means for the next planned session after it. Judge it from that day's point of view; ignore sessions dated after it. Under 45 words. No preamble; praise only if earned.`
+    : PT`He logged this session:\n${sessDesc(s)}\n\nYour short take was: "${short}"\n\nNow give fuller feedback on this session: effort against the plan, what the numbers or his notes say, recovery, and what to do next. Up to 4 short "- " bullets, under 130 words. Don't repeat the short take. No preamble.`;
+  try{ const r=await sample(`${coachContext()}\n\n${COACH_RULES()}\n\n${task}`,{cache:false,onText:({text})=>{ fb[id]={...fb[id],[mode]:text}; renderFb(); }});
+    const text=r.truncated?r.text.trimEnd()+" …":r.text; fb[id]={...fb[id],[mode]:text,busy:null};
+    if(db&&canWrite){ try{ await db.doc("sessions/"+id).update(mode==="short"?{coachShort:text,coachAt:Date.now()}:{coachLong:text}); }catch(_){} } }
+  catch(e){ if(e?.code==="not_granted"||e?.code==="sampling_disabled") sample=null;
+    fb[id]={...fb[id],busy:null,[mode]:e?.text||fb[id]?.[mode]||"",err:e?.code==="rate_limited"?"The coach is busy right now. Try again in a few minutes.":"Couldn't get feedback just now. Try again."}; }
+  renderFb(); }
+
+// ---------- questions ----------
+let turns=[]; let askCtl=null; let proposals=[]; let pseq=0; let toolsOk=false;
+const fmtItems=items=>(items||[]).map(x=>`${sportL(x.sport)} ${x.kind} ${fmtMin(+x.min||0)}${x.optional?" (optional)":""}`).join(" + ")||"Rest";
+function cleanDays(raw){ if(!Array.isArray(raw)||raw.length!==7) throw new Error("days must be an array of exactly 7 day arrays, Monday first");
+  return raw.map(d=>(Array.isArray(d)?d:[]).slice(0,4).map(x=>{ const sport=SPORTS[x?.sport]?x.sport:"other"; const kinds=SPORTS[sport].kinds; const kind=kinds.includes(x?.kind)?x.kind:kinds[0];
+    const o={sport,kind,min:Math.max(5,Math.min(600,Math.round(+x?.min||0)||30))}; if(x?.note) o.note=String(x.note).slice(0,80); if(x?.optional===true) o.optional=true; return o; })); }
+function cleanNums(raw){ const out={}; for(const [k,[lo,hi]] of Object.entries(NUMS)){ if(raw?.[k]==null||raw[k]==="") continue; const v=+raw[k]; if(!(v>=lo&&v<=hi)) throw new Error(`${k} must be between ${lo} and ${hi}`); out[k]=k==="weight"?Math.round(v*10)/10:Math.round(v); }
+  if(!Object.keys(out).length) throw new Error("include at least one of: "+Object.keys(NUMS).join(", ")); return out; }
+function proposalHtml(p){ if(!p) return ""; let body="";
+  if(p.type==="plan"){
+    const rows=DAYS.map((d,i)=>{ const b=p.before[i],a=fmtItems(p.days[i]); return b===a?"":`<tr><th>${d}</th><td class="was">${esc(b)}</td><td>${esc(a)}</td></tr>`; }).join("");
+    body=rows?`<div class="tablewrap"><table class="diff"><thead><tr><th></th><th>Now</th><th>Proposed</th></tr></thead><tbody>${rows}</tbody></table></div>`:`<p class="note">Same as the current plan.</p>`; }
+  else body=`<table class="diff"><thead><tr><th></th><th>Now</th><th>Proposed</th></tr></thead><tbody>${Object.entries(p.nums).map(([k,v])=>`<tr><th>${NUMS[k][2]}</th><td class="was">${p.before[k]??"–"}</td><td>${v} ${NUMS[k][3]}</td></tr>`).join("")}</tbody></table>`;
+  const title=p.type==="plan"?{this_week:`Change this week (from ${fmtShort(fromDayNum(p.wk))})`,next_week:`Change next week (from ${fmtShort(fromDayNum(p.wk))})`,structure:"Change your usual week"}[p.scope]:"Update your numbers";
+  const act=p.status==="applied"?`<span class="ok-t">Applied</span>`:p.status==="discarded"?`<span class="note">Discarded</span>`:p.status==="busy"?`<span class="note">Applying…</span>`:
+    `<button class="btn small primary" type="button" data-papply="${p.id}" ${canWrite&&db?"":"disabled"}>Apply</button><button class="btn small ghost" type="button" data-pdiscard="${p.id}">Discard</button>`;
+  return `<div class="prop ${p.status}" data-pid="${p.id}"><span class="fb-l">${esc(title)}</span><p class="prop-sum">${esc(p.summary)}</p>${body}${p.err?`<p class="err">${esc(p.err)}</p>`:""}<div class="row-actions">${act}</div></div>`; }
+function refreshProp(p){ const el=document.querySelector(`.prop[data-pid="${p.id}"]`); if(el) el.outerHTML=proposalHtml(p); }
+async function applyProposal(id){ const p=proposals.find(x=>x.id===id); if(!p||p.status!=="pending"||!db) return; p.status="busy"; p.err=""; refreshProp(p);
+  try{ if(p.type==="plan"){ if(p.scope==="structure") await saveTemplate(p.days); else await db.doc("weekPlans/"+p.wk).set({days:p.days,summary:p.summary,updatedAt:Date.now()}); }
+    else await db.doc("config/profile").update(p.nums);
+    p.status="applied"; }catch(_){ p.status="pending"; p.err="Couldn't apply that. Try again."; }
+  refreshProp(p); }
+const chatTurns=()=>turns.filter(t=>t.role==="user"||t.role==="assistant");
+const chatSummary=()=>turns.find(t=>t.role==="summary")?.content||"";
+function renderThread(){ $("thread").innerHTML=turns.map(t=>t.role==="user"?`<div class="q">${esc(t.content)}</div>`:t.role==="proposal"?proposalHtml(proposals.find(p=>p.id===t.pid)):t.role==="summary"?`<details class="sum"><summary>Earlier conversation, compacted</summary>${mdLite(t.content)}</details>`:`<div class="a">${mdLite(t.content)}</div>`).join("");
+  $("askClear").hidden=!turns.length; $("askCompact").hidden=!sample||chatTurns().length<4; $("askErr").hidden=true; }
+async function compactChat(){ if(!sample||askCtl||chatTurns().length<2) return; const btn=$("askCompact"); askCtl=new AbortController(); btn.disabled=true; btn.textContent="Compacting…"; $("askBtn").disabled=true;
+  const lines=turns.map(t=>t.role==="user"?`ATHLETE: ${t.content}`:t.role==="assistant"?`COACH: ${t.content}`:t.role==="summary"?`EARLIER SUMMARY:\n${t.content}`:(()=>{ const p=proposals.find(x=>x.id===t.pid); return p?`COACH PROPOSAL (${p.type==="plan"?p.scope.replace("_"," "):"numbers"}; ${p.status==="busy"?"pending":p.status}): ${p.summary}`:""; })()).filter(Boolean).join("\n\n");
+  try{ const {text}=await sample(PT`Below is a chat between ${ATH}, an amateur athlete, and his training coach. Compact it into a summary the coach will read instead of the full chat when the conversation continues.\n\nKeep only what still matters: what he asked for, what was advised or decided, each proposal and whether it was applied, discarded or is still pending, anything he said about how he feels, his availability or constraints, and open questions. Leave out pleasantries and anything already settled that no longer matters.\n\nWrite up to 6 short "- " bullets, under 110 words, no preamble.\n\nCHAT\n${lines}`,{signal:askCtl.signal,cache:false,modelTier:"quick"});
+    const keep=turns.filter(t=>t.role==="proposal"&&proposals.find(p=>p.id===t.pid)?.status==="pending");
+    proposals=proposals.filter(p=>p.status==="pending"); turns=[{role:"summary",content:text},...keep]; renderThread(); }
+  catch(e){ if(e?.code!=="cancelled"){ $("askErr").textContent=e?.code==="rate_limited"?"The coach is busy right now. Try compacting again in a few minutes.":"Couldn't compact just now. The conversation is unchanged."; $("askErr").hidden=false; } }
+  finally{ askCtl=null; btn.disabled=false; btn.textContent="Compact"; $("askBtn").disabled=false; } }
+function coachTools(wk,newP,box){ const add=p=>{ proposals.push(p); newP.push(p); box.insertAdjacentHTML("beforeend",proposalHtml(p)); return PT`Shown to ${ATH} as a card with Apply and Discard. Nothing is changed until he clicks Apply.`; };
+  const kindsTxt=Object.entries(SPORTS).map(([k,v])=>`${k}: ${v.kinds.join("|")}`).join("; ");
+  return [
+    {name:"propose_plan_change",description:PT`Show ${ATH} a proposed training plan as a card he can Apply or Discard; nothing changes until he applies it. scope this_week or next_week changes only that week; structure changes his usual week. Send all 7 days, Monday first, unchanged days included. Returns a confirmation that the card is shown.`,
+     inputSchema:{type:"object",required:["scope","summary","days"],properties:{scope:{type:"string",enum:["this_week","next_week","structure"]},summary:{type:"string",description:"One short line: what changes and why"},
+       days:{type:"array",minItems:7,maxItems:7,description:"7 arrays, Monday first; an empty array is a rest day",items:{type:"array",items:{type:"object",required:["sport","kind","min"],properties:{sport:{type:"string",enum:Object.keys(SPORTS)},kind:{type:"string",description:"Allowed per sport: "+kindsTxt},min:{type:"number",description:"Planned minutes"},note:{type:"string"},optional:{type:"boolean"}}}}}}},
+     execute:(input)=>{ const scope=["this_week","next_week","structure"].includes(input?.scope)?input.scope:null; if(!scope) throw new Error("scope must be this_week, next_week or structure");
+       const pw=scope==="next_week"?wk+7:wk; const base=scope==="structure"?tplDays():planFor(pw);
+       return add({id:"p"+(++pseq),type:"plan",scope,wk:pw,days:cleanDays(input.days),before:DAYS.map((_,i)=>fmtItems(base?.[i])),summary:String(input.summary||"").slice(0,200),status:"pending"}); }},
+    {name:"propose_numbers",description:PT`Show ${ATH} a proposed update to his training numbers as a card he can Apply or Discard. Fields: ftp (W), weight (kg), lthr (threshold heart rate), maxHr, restHr. Include only fields that change. Returns a confirmation that the card is shown.`,
+     inputSchema:{type:"object",required:["reason"],properties:{ftp:{type:"number"},weight:{type:"number"},lthr:{type:"number"},maxHr:{type:"number"},restHr:{type:"number"},reason:{type:"string",description:"One short line: why"}}},
+     execute:(input)=>add({id:"p"+(++pseq),type:"numbers",nums:cleanNums(input),before:{...profile},summary:String(input?.reason||"").slice(0,200),status:"pending"})}
+  ]; }
+async function ask(q){
+  if(!sample||askCtl) return; turns.push({role:"user",content:q}); renderThread();
+  const bubble=document.createElement("div"); bubble.className="a"; bubble.innerHTML=`<p class="note">Thinking…</p>`; const box=document.createElement("div"); box.className="thread";
+  $("thread").append(bubble,box); askCtl=new AbortController(); $("askBtn").disabled=true;
+  const wk=curWeekKey(), newP=[]; const useTools=toolsOk&&canWrite&&!!db;
+  const plans=useTools?`\n\nCURRENT PLANS AS JSON (Monday first; copy unchanged days exactly)\n${JSON.stringify({this_week:planFor(wk),next_week:planFor(wk+7),structure:tplDays()})}`:"";
+  const earlier=chatSummary()?`\n\nEARLIER IN THIS CHAT (compacted summary)\n${chatSummary()}`:"";
+  const props=proposals.length?`\n\nPROPOSALS ALREADY MADE IN THIS CHAT\n${proposals.map(p=>`- ${p.type==="plan"?p.scope:"numbers"}: ${p.summary} -> ${p.status}`).join("\n")}`:"";
+  const toolRules=useTools?PT`\n\nYou can change his plan or numbers only by proposing it with your tools; he applies or discards each proposal himself. When he asks for a change, judge it before you propose anything; do not just do what he says. If it is sensible or he has a real reason (illness, pain, travel, work, real fatigue), propose it with propose_plan_change without making him feel guilty. If it is slacking (dropping or softening a session for convenience or mood), say so directly and propose the smallest version still worth doing instead; if he then insists, it is his training: propose what he asked and state plainly what he gives up. If it is too much (more load or intensity than is safe, hard days back to back, training on a niggle), do not propose it; propose the safe version and tell him why. Use this_week or next_week for one-off adjustments and structure only when his usual week should change. Keep the fixed constraints from his background and usual week (days he can't train, fixed sessions such as races or club nights) unless he says otherwise. Use propose_numbers when he gives new test results or the data clearly shows a number is off, and say why. After proposing, say in one sentence what the card changes. Never say a change has been applied.`:"";
+  const lead={role:"user",content:`${coachContext()}\n\n${COACH_RULES()}${plans}${earlier}${props}${toolRules}\n\n${P("He will now talk to you. Answer as his coach:")} direct and honest, 2–5 short sentences or up to 4 "- " bullets, specific to his data and structure. If the answer depends on something he hasn't logged or told you, say what you'd need. No preamble.`};
+  const done=()=>newP.forEach(p=>turns.push({role:"proposal",pid:p.id}));
+  try{ const opts={signal:askCtl.signal,cache:false,onText:({text})=>{ bubble.innerHTML=mdLite(text); }}; if(useTools) opts.tools=coachTools(wk,newP,box);
+    const hist=chatTurns().slice(-12); while(hist.length&&hist[0].role!=="user") hist.shift();
+    const msgs=[]; for(const t of hist){ const last=msgs[msgs.length-1]; if(last&&last.role===t.role) last.content+="\n\n"+t.content; else msgs.push({role:t.role,content:t.content}); }
+    msgs[0]={role:"user",content:`${lead.content}\n\nHIS MESSAGE\n${msgs[0].content}`};
+    const {text}=await sample(msgs,opts);
+    turns.push({role:"assistant",content:text}); done(); renderThread(); }
+  catch(e){ if(e?.text) turns.push({role:"assistant",content:e.text}); done(); renderThread();
+    if(e?.code==="tools_unavailable") toolsOk=false;
+    if(e?.code==="not_granted"||e?.code==="sampling_disabled"){ $("askForm").hidden=true; }
+    else if(e?.code!=="cancelled"){ const n=document.createElement("p"); n.className="err"; n.textContent=e?.code==="rate_limited"?"The coach is busy right now. Try again in a few minutes.":e?.code==="tools_unavailable"?"Plan changes aren't available in this view. Ask again for advice only.":"That answer was interrupted. Ask again."; $("thread").appendChild(n); } }
+  finally{ askCtl=null; $("askBtn").disabled=false; } }
+$("askForm").addEventListener("submit",e=>{ e.preventDefault(); const q=$("askIn").value.trim(); if(!q) return; $("askIn").value=""; ask(q); });
+$("askClear").addEventListener("click",()=>{ askCtl?.abort(); turns=[]; proposals=[]; renderThread(); });
+$("askCompact").addEventListener("click",compactChat);
+
+// ---------- export / import ----------
+let pendingImport=null;
+function renderDataCount(){ const el=$("dataCount"); if(!el) return; const ds=sessions.map(s=>s.date).filter(Boolean).sort();
+  el.textContent=ds.length?`${sessions.length} session${sessions.length===1?"":"s"} · ${fmtShort(parseDate(ds[0]))} ${parseDate(ds[0]).getFullYear()} – ${fmtShort(parseDate(ds[ds.length-1]))} ${parseDate(ds[ds.length-1]).getFullYear()}`:"No sessions yet"; }
+function importBox(html){ const el=$("importBox"); el.hidden=!html; el.innerHTML=html||""; }
+async function postImport(body){ const r=await fetch("api/import",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)}); const j=await r.json().catch(()=>({})); if(!r.ok) throw new Error(j.message||`Import failed (${r.status})`); return j; }
+const countsTxt=c=>Object.entries(c).map(([k,v])=>`${v} ${({sessions:"sessions",config:"settings",goals:"goals",weekPlans:"adjusted weeks",coaching:"coach notes"})[k]||k}`).join(", ");
+$("importIn").addEventListener("change",async e=>{ const f=e.target.files?.[0]; e.target.value=""; if(!f) return;
+  importBox(`<p class="note">Reading ${esc(f.name)}…</p>`);
+  try{ const file=JSON.parse(await f.text()); const pre=await postImport({file,dryRun:true}); pendingImport=file;
+    importBox(`<div class="prop"><span class="fb-l">Import ${esc(f.name)}</span><p class="prop-sum">${esc(countsTxt(pre.counts))}.</p>${(pre.notes||[]).map(n=>`<p class="note" style="margin:0">${esc(n)}</p>`).join("")}
+      <p class="note" style="margin:0"><b>Add</b> keeps your current data and adds these, overwriting entries with the same ID. <b>Replace</b> deletes everything here first.</p>
+      <div class="row-actions"><button class="btn small primary" type="button" data-imp="merge">Add to my data</button><button class="btn small danger" type="button" data-imp="replace">Replace everything</button><button class="btn small ghost" type="button" data-imp="cancel">Cancel</button></div></div>`); }
+  catch(err){ pendingImport=null; importBox(`<p class="err">${esc(err instanceof SyntaxError?"That file isn't valid JSON.":err.message)}</p>`); } });
+async function runImport(mode,btn){ if(!pendingImport) return; btn.disabled=true; btn.textContent="Importing…";
+  try{ const j=await postImport({file:pendingImport,mode}); pendingImport=null; importBox(`<p class="ok-t">Imported: ${esc(countsTxt(j.counts))}${mode==="replace"?" (replaced everything)":""}.</p>`); }
+  catch(err){ btn.disabled=false; btn.textContent=mode==="replace"?"Replace everything":"Add to my data"; importBox($("importBox").innerHTML+`<p class="err">${esc(err.message)}</p>`); } }
+
+// ---------- views ----------
+const VIEWS=["week","coach","progress","plan"]; let coachOff=false, keepScroll=false;
+function showView(){ let v=(location.hash||"").slice(1); if(!VIEWS.includes(v)||(v==="coach"&&coachOff)) v="week";
+  document.querySelectorAll(".view").forEach(el=>{ el.hidden=el.dataset.view!==v; });
+  document.querySelectorAll(".tabs a").forEach(a=>{ const on=a.dataset.tab===v; a.classList.toggle("on",on); if(on) a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current"); }); return v; }
+function goView(v){ if(location.hash!=="#"+v){ keepScroll=true; location.hash=v; } showView(); }
+function hideCoach(){ coachOff=true; $("coachPanel").hidden=true; document.querySelector('.tabs a[data-tab="coach"]').hidden=true; showView(); }
+window.addEventListener("hashchange",()=>{ showView(); if(keepScroll){ keepScroll=false; return; } const top=document.querySelector(".band").offsetHeight; if(window.scrollY>top) window.scrollTo(0,top); });
+
+// ---------- wiring ----------
+function setStatus(kind,text){ $("statusDot").className="dot"+(kind?" "+kind:""); $("statusText").textContent=text; }
+function applyWriteState(){ $("readonlyNote").hidden=!(db&&!canWrite); $("drop").hidden=!!(db&&!canWrite); $("about").disabled=!canWrite||!db; for(const k of Object.keys(NUMS)) $(k).disabled=!canWrite||!db; renderAll(); renderDrafts(); }
+async function saveTemplate(days){ await db.doc("config/template").set({days,updatedAt:Date.now()}); }
+document.addEventListener("click",async e=>{
+  const t=e.target.closest("button, tr.run"); if(!t) return;
+  if(t.id==="useSuggested"||t.id==="useSuggested2"){ tplDraft=DAYS.map(()=>[]); editingTpl=true; goView("plan"); renderTemplate(); $("tplTitle").scrollIntoView({behavior:"smooth",block:"start"}); return; }
+  if(t.dataset.quick){ addDraft({date:isoDate(today()),sport:t.dataset.quick}); return; }
+  if(t.dataset.wk!=null){ const v=+t.dataset.wk; weekOff=v===0?0:Math.max(-12,Math.min(8,weekOff+v)); renderWeek(); return; }
+  if(t.dataset.setftp){ t.disabled=true; db.doc("config/profile").update({ftp:+t.dataset.setftp}).catch(()=>{ t.disabled=false; t.textContent="Couldn't save. Try again"; }); return; }
+  if(t.dataset.progstart){ t.disabled=true; db.doc("config/progression").set({start:curWeekKey(),on:true,stepBase:0,updatedAt:Date.now()}).catch(()=>{ t.disabled=false; }); return; }
+  if(t.dataset.progoff||t.dataset.progrestart){ const restart=!!t.dataset.progrestart; if(!t.classList.contains("armed")){ const label=t.textContent; t.classList.add("armed"); t.textContent="Confirm"; setTimeout(()=>{ if(t.isConnected){ t.classList.remove("armed"); t.textContent=label; } },4000); return; }
+    t.disabled=true; const w=restart?db.doc("config/progression").set({start:curWeekKey(),on:true,stepBase:stepFor(curWeekKey()),updatedAt:Date.now()}):db.doc("config/progression").update({on:false});
+    w.catch(()=>{ t.disabled=false; t.textContent="Couldn't save. Try again"; }); return; }
+  if(t.dataset.imp){ const m=t.dataset.imp; if(m==="cancel"){ pendingImport=null; importBox(""); return; }
+    if(m==="replace"&&!t.classList.contains("armed")){ t.classList.add("armed"); t.textContent="Confirm: delete current data and replace"; return; }
+    runImport(m,t); return; }
+  if(t.dataset.papply){ applyProposal(t.dataset.papply); return; }
+  if(t.dataset.pdiscard){ const p=proposals.find(x=>x.id===t.dataset.pdiscard); if(p&&p.status==="pending"){ p.status="discarded"; refreshProp(p); } return; }
+  if(t.dataset.resetweek){ if(!t.classList.contains("armed")){ t.classList.add("armed"); t.textContent="Confirm"; setTimeout(()=>{ if(t.isConnected){ t.classList.remove("armed"); t.textContent=+t.dataset.resetweek===curWeekKey()?"Back to usual week":"Undo"; } },4000); return; }
+    t.disabled=true; db.doc("weekPlans/"+t.dataset.resetweek).delete().catch(()=>{ t.disabled=false; t.textContent="Couldn't reset. Try again"; }); return; }
+  if(t.dataset.qdone){ const [i,k,date]=t.dataset.qdone.split("|"); const it=planFor(weekKey(date))?.[+i]?.[+k]; if(!it||!db) return; t.disabled=true; t.textContent="Saving…";
+    try{ await db.collection("sessions").doc(`${date}-${Math.random().toString(36).slice(2,8)}`).set({date,sport:it.sport,kind:it.kind,where:it.sport==="ride"?"outdoor":null,durationS:(+it.min||0)*60,km:null,elevGain:null,avgHr:null,avgPower:null,rpe:null,feel:null,niggle:"",notes:"",grade:null,quick:true,createdAt:Date.now(),updatedAt:Date.now()}); }
+    catch(_){ t.disabled=false; t.textContent="Couldn't save. Retry"; } return; }
+  if(t.dataset.logplan){ const [sport,kind,date]=t.dataset.logplan.split("|"); addDraft({date,sport,kind}); goView("week"); $("logPanel").scrollIntoView({behavior:"smooth",block:"start"}); return; }
+  if(t.dataset.fb){ const [id,mode]=t.dataset.fb.split("|"); requestFeedback(id,mode); return; }
+  if(t.dataset.fbx){ fbRecent=fbRecent.filter(x=>x!==t.dataset.fbx); renderFbRecent(); return; }
+  if(t.id==="coachBtn"){ runCoach(); return; } if(t.id==="coachStop"){ coachCtl?.abort(); return; }
+  if(t.dataset.feel){ const card=t.closest(".draft"); const d=drafts.find(x=>x.key===card.dataset.key); d.feel=t.dataset.feel; card.querySelectorAll("[data-feel]").forEach(b=>b.setAttribute("aria-pressed",String(b===t))); return; }
+  if(t.dataset.cancel){ drafts=drafts.filter(x=>x.key!==t.dataset.cancel); renderDrafts(); return; }
+  if(t.dataset.save){ saveDraft(t.dataset.save,t); return; }
+  if(t.dataset.edit){ const s=sessions.find(x=>x.id===t.dataset.edit); if(!s) return; drafts=drafts.filter(x=>x.editingId!==s.id); addDraft({...s,editingId:s.id,feel:s.feel?String(s.feel):null}); goView("week"); $("logPanel").scrollIntoView({behavior:"smooth",block:"start"}); return; }
+  if(t.dataset.del){ if(!t.classList.contains("armed")){ t.classList.add("armed"); t.textContent="Confirm delete"; setTimeout(()=>{ if(t.isConnected){t.classList.remove("armed");t.textContent="Delete";} },4000); return; }
+    t.disabled=true; db.doc("sessions/"+t.dataset.del).delete().catch(()=>{ t.disabled=false; t.textContent="Couldn't delete. Try again"; }); return; }
+  if(t.dataset.gdel){ if(!t.classList.contains("armed")){ t.classList.add("armed"); t.textContent="Confirm"; setTimeout(()=>{ if(t.isConnected){t.classList.remove("armed");t.textContent="Remove";} },4000); return; }
+    t.disabled=true; db.doc("goals/"+t.dataset.gdel).delete().catch(()=>{ t.disabled=false; }); return; }
+  if(t.id==="gSave"){ const title=$("gTitle").value.trim(); if(!title){ $("gErr").textContent="Give the goal a name."; $("gErr").hidden=false; return; } $("gErr").hidden=true; t.disabled=true;
+    try{ await db.collection("goals").doc(`g-${Date.now().toString(36)}`).set({title:title.slice(0,120),date:$("gDate").value||null,sport:$("gSport").value,notes:$("gNotes").value.trim().slice(0,600),createdAt:Date.now()});
+      $("gTitle").value="";$("gDate").value="";$("gNotes").value=""; $("goalAdd").open=false; } catch(_){ $("gErr").textContent="Couldn't save the goal. Try again."; $("gErr").hidden=false; } finally{ t.disabled=false; } return; }
+  if(t.id==="tplEdit"){ if(editingTpl){ editingTpl=false; renderTemplate(); return; } tplDraft=JSON.parse(JSON.stringify(tplDays())); editingTpl=true; renderTemplate(); return; }
+  if(t.id==="tplCancel"){ editingTpl=false; renderTemplate(); return; }
+  if(t.dataset.tpladd!=null){ tplDraft[+t.dataset.tpladd].push({sport:"ride",kind:"endurance",min:60}); renderTemplate(); return; }
+  if(t.dataset.tplrm){ const [i,j]=t.dataset.tplrm.split(".").map(Number); tplDraft[i].splice(j,1); renderTemplate(); return; }
+  if(t.id==="tplSave"){ t.disabled=true; try{ await saveTemplate(tplDraft); editingTpl=false; }catch(_){ $("tplErr").textContent="Couldn't save. Try again."; $("tplErr").hidden=false; t.disabled=false; } return; }
+  if(t.matches("tr.run")){ expanded=expanded===t.dataset.id?null:t.dataset.id; renderRows(); }
+});
+document.addEventListener("keydown",e=>{ if((e.key==="Enter"||e.key===" ")&&e.target.matches&&e.target.matches("tr.run")){ e.preventDefault(); e.target.click(); } });
+document.addEventListener("change",e=>{
+  const card=e.target.closest?.(".draft"); if(card&&e.target.id.endsWith("-sport")){ const d=syncDraft(card); d.sport=e.target.value; d.kind=d.sport==="ride"?"endurance":SPORTS[d.sport].kinds[0]; renderDrafts(); return; }
+  if(card&&e.target.id.endsWith("-kind")){ const d=syncDraft(card); d.kind=e.target.value; const r=$(`${d.key}-rpe`); if(r) r.placeholder=estRpe(d); return; }
+  const tp=e.target.dataset?.tpl; if(tp){ const [i,j,f]=tp.split("."); const it=tplDraft[+i][+j]; if(f==="min") it.min=Math.max(5,parseInt(e.target.value,10)||0); else if(f==="optional") it.optional=e.target.checked; else if(f==="note") it.note=e.target.value.slice(0,80); else { it[f]=e.target.value; if(f==="sport"){ it.kind=SPORTS[it.sport].kinds[0]; renderTemplate(); } } }
+});
+document.addEventListener("input",e=>{ const card=e.target.closest?.(".draft"); if(card) syncDraft(card); });
+const drop=$("drop");
+["dragenter","dragover"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("over");}));
+["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("over");}));
+drop.addEventListener("drop",e=>{ if(e.dataTransfer?.files?.length) handleFiles([...e.dataTransfer.files]); });
+$("fileIn").addEventListener("change",e=>{ handleFiles([...e.target.files]); e.target.value=""; });
+for(const k of Object.keys(NUMS)) $(k).addEventListener("change",async e=>{ if(!db||!canWrite) return; const [lo,hi,label,unit]=NUMS[k]; const raw=parseFloat(e.target.value); const v=k==="weight"?Math.round(raw*10)/10:Math.round(raw); const ok=v>=lo&&v<=hi;
+  if(e.target.value&&!ok){ $("numsNote").textContent=`${label} should be between ${lo} and ${hi} ${unit}.`; return; }
+  try{ await db.doc("config/profile").update({[k]:e.target.value?v:null}); $("numsNote").textContent="Saved. Zones and effort estimates updated."; }catch(_){ $("numsNote").textContent="Couldn't save. Try again."; } });
+$("about").addEventListener("change",async e=>{ if(!db||!canWrite) return; $("aboutNote").textContent="Saving…"; try{ await db.doc("config/profile").set({...profile,about:e.target.value.slice(0,4000)}); $("aboutNote").textContent="Saved. Coaching notes use this."; }catch(_){ $("aboutNote").textContent="Couldn't save. Try again."; } });
+
+renderAll(); showView();
+setInterval(()=>{ renderWeek(); renderTiles(); },15*60*1000);
+
+(async()=>{
+  if(!window.claude||typeof window.claude.use!=="function"){ setStatus("err","The page didn't load its runtime. Reload to try again."); dbReady=true; hideCoach(); applyWriteState(); return; }
+  claude.use("sample").then(s=>{ sample=s; if(!s){ hideCoach(); return; } renderRows(); Promise.resolve(s.limits?.()).then(l=>{ toolsOk=!!l?.tools; }).catch(()=>{}); });
+  db=await claude.use("db");
+  if(!db){ setStatus("err","Sign in to see and log training."); dbReady=true; applyWriteState(); return; }
+  try{ const u=await claude.use("user"); const c=u&&typeof u.can==="function"?await u.can("data.write"):null; if(c===false) canWrite=false; }catch(_){}
+  applyWriteState();
+  let fresh=false; const timer=setTimeout(()=>{ if(!fresh) setStatus("err",sessions.length?"Showing saved sessions; the log may be out of date.":"Can't reach the training log yet."); },10000);
+  db.collection("sessions").onSnapshot(snap=>{ sessions=snap.docs.map(d=>({id:d.id,...d.data()})); dbReady=true;
+    if(!snap.metadata.fromCache){ fresh=true; clearTimeout(timer); setStatus("live",`Training log synced · ${sessions.length} session${sessions.length===1?"":"s"}`); }
+    if(expanded&&!sessions.some(s=>s.id===expanded)) expanded=null; renderDataCount(); renderWeek(); renderTiles(); renderChecks(); renderCharts(); renderBench(); renderProgression(); renderRows(); },
+    ()=>{ clearTimeout(timer); dbReady=true; setStatus("err","The training log stopped syncing. Reload the page to reconnect."); renderRows(); });
+  db.doc("config/template").onSnapshot(s=>{ template=s.exists?{...s.data()}:null; renderWeek(); renderTiles(); renderChecks(); renderProgression(); if(!editingTpl) renderTemplate(); },()=>{});
+  db.doc("config/progression").onSnapshot(s=>{ progression=s.exists?{...s.data()}:null; renderHeader(); renderWeek(); renderTiles(); renderChecks(); renderProgression(); },()=>{});
+  db.doc("config/profile").onSnapshot(s=>{ profile=s.exists?{...s.data()}:{}; if(document.activeElement!==$("about")) $("about").value=profile.about||"";
+    for(const k of Object.keys(NUMS)) if(document.activeElement!==$(k)) $(k).value=profile[k]||"";
+    renderNumbers(); renderWeek(); renderTiles(); renderChecks(); renderCharts(); renderBench(); renderProgression(); renderRows(); },()=>{});
+  db.collection("weekPlans").onSnapshot(s=>{ weekPlans={}; s.docs.forEach(d=>{ weekPlans[d.id]=d.data(); }); renderWeek(); renderTiles(); renderChecks(); },()=>{});
+  db.collection("goals").onSnapshot(s=>{ goals=s.docs.map(d=>({id:d.id,...d.data()})); renderGoals(); renderHeader(); },()=>{});
+  db.doc("coaching/latest").onSnapshot(s=>{ if(s.exists&&!coachCtl){ coaching={...s.data()}; renderCoach(); } },()=>{});
+})();
+})();
+</script>

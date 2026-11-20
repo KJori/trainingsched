@@ -1,0 +1,39 @@
+# One instance per athlete: each gets its own name, data volume and Pangolin resource.
+# Names and coach settings (provider, model, API key) come from .env.
+services:
+  athlete1:
+    build: .
+    image: trainingsched:latest
+    container_name: trainingsched-1
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      ATHLETE_NAME: ${ATHLETE_1_NAME:-}
+      ATHLETE_PRONOUN: ${ATHLETE_1_PRONOUN:-he}
+    volumes:
+      - athlete1-data:/data
+    networks: [pangolin]
+    # ports: ["8081:8080"]   # only if you also want it on the LAN without Pangolin
+
+  athlete2:
+    build: .
+    image: trainingsched:latest
+    container_name: trainingsched-2
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      ATHLETE_NAME: ${ATHLETE_2_NAME:-}
+      ATHLETE_PRONOUN: ${ATHLETE_2_PRONOUN:-he}
+    volumes:
+      - athlete2-data:/data
+    networks: [pangolin]
+    # ports: ["8082:8080"]
+
+volumes:
+  athlete1-data:
+  athlete2-data:
+
+networks:
+  pangolin:
+    external: true
+    name: pangolin   # the Docker network your Newt container is on
