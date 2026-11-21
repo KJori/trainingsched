@@ -458,6 +458,48 @@ const sportL=s=>(SPORTS[s]||SPORTS.other).label;
 
 // ---------- GPX ----------
 function haversine(a,b){const R=6371000,t=Math.PI/180;const dLat=(b.lat-a.lat)*t,dLon=(b.lon-a.lon)*t;const x=Math.sin(dLat/2)**2+Math.cos(a.lat*t)*Math.cos(b.lat*t)*Math.sin(dLon/2)**2;return 2*R*Math.asin(Math.sqrt(x));}
+// ---------- work intervals ----------
+// Session averages hide interval work: warm-up, recoveries and cool-down pull them down. So the hard efforts are found in the
+// 1-second power series (rides) or speed series (runs), with heart rate alongside, and the checks and the coach judge those.
+function findEfforts(v,h,minLen){ const n=v.length; if(n<600) return null;
+  const sm=new Array(n); let acc=0; for(let i=0;i<n;i++){ acc+=v[i]; if(i>=10) acc-=v[i-10]; sm[i]=acc/Math.min(i+1,10); }
+  const at=i=>sm[Math.min(n-1,i+5)]; /* trailing 10-s average, shifted to line up with the raw series */
+  const srt=sm.slice().sort((a,b)=>a-b); const lo=srt[Math.floor(n*.2)], hi=srt[Math.floor(n*.92)];
+  if(!(hi>0)||(hi-lo)/hi<0.22) return null; /* steady session: no structure to find */
+  const thr=lo+(hi-lo)*.55; const segs=[]; let st=-1, gap=0;
+  for(let i=0;i<n;i++){ if(at(i)>=thr){ if(st<0) st=i; gap=0; } else if(st>=0&&++gap>8){ segs.push([st,i-gap+1]); st=-1; gap=0; } }
+  if(st>=0) segs.push([st,n-gap]);
+  const out=[]; for(const [a,b] of segs){ const len=b-a; if(len<minLen) continue;
+    let sv=0,sh=0,nh=0,mh=0,eh=0,ne=0; for(let i=a;i<b;i++){ sv+=v[i]; if(h&&h[i]){ sh+=h[i]; nh++; if(h[i]>mh) mh=h[i]; if(i>=b-15){ eh+=h[i]; ne++; } } }
+    out.push({s:a,d:len,v:Math.round(sv/len*100)/100,hr:nh?Math.round(sh/nh):null,hrMax:mh||null,hrEnd:ne?Math.round(eh/ne):null}); }
+  return out.length?out.slice(0,60):null; }
+// Sessions saved before efforts were stored: rebuild them from the saved power/HR profile (about 20-s resolution, so only reps of a minute or more).
+const effCache=new Map();
+function effortsOf(s){ if(s.work) return s.work; if(s.work===null) return null; /* parsed from the full file and nothing found */
+  const pr=s.profile; if(!pr||pr.x!=="min"||!pr.p||pr.p.length<20) return null;
+  const key=`${s.id||s.date}:${pr.p.length}:${pr.d[pr.d.length-1]}`; if(effCache.has(key)) return effCache.get(key);
+  const v=[],h=[]; for(let i=0;i<pr.p.length;i++){ const dm=(i<pr.d.length-1?pr.d[i+1]-pr.d[i]:(pr.d[i]-pr.d[Math.max(0,i-1)]))||0; const k=Math.min(120,Math.round(dm*60)); for(let j=0;j<k;j++){ v.push(pr.p[i]??0); h.push(pr.h?.[i]||0); } }
+  const e=findEfforts(v,h,45); const w=e?{u:"W",e,est:true}:null; effCache.set(key,w); return w; }
+function workSet(s){ const w=effortsOf(s); if(!w||!w.e?.length) return null; const ef=w.e; let best=null;
+  for(const base of ef){ const g=ef.filter(e=>e.d>=base.d&&e.d<=base.d*1.3); const t=g.reduce((a,e)=>a+e.d,0); if(!best||t>best.t) best={g,t}; }
+  const reps=best.g; const tot=best.t; const avg=reps.reduce((a,e)=>a+e.v*e.d,0)/tot;
+  const ds=reps.map(e=>e.d).sort((a,b)=>a-b); const dur=Math.round(ds[Math.floor(ds.length/2)]/5)*5;
+  return {u:w.u,est:!!w.est,reps,k:reps.length,dur,tot,avg,all:ef.reduce((a,e)=>a+e.d,0),others:ef.length-reps.length}; }
+const clockOf=sec=>`${Math.floor(sec/60)}:${String(Math.round(sec%60)).padStart(2,"0")}`;
+const workVal=(u,x)=>u==="W"?`${Math.round(x)} W`:x>0?`${clockOf(1000/x)}/km`:"–";
+function workShort(s){ const w=workSet(s); if(!w) return ""; return `${w.k}×${clockOf(w.dur)} @ ${workVal(w.u,w.avg)}`; }
+function workTxt(s){ const w=workSet(s); if(!w) return ""; const ftp=ftpOf();
+  const pct=w.u==="W"&&ftp?` (${Math.round(w.avg/ftp*100)}% of FTP)`:"";
+  const each=w.k>1&&w.k<=12?`; reps ${w.reps.map(e=>w.u==="W"?Math.round(e.v):workVal(w.u,e.v).replace("/km","")).join(", ")}${w.u==="W"?" W":"/km"}`:"";
+  const hs=w.reps.filter(e=>e.hrEnd||e.hr); const hr=hs.length?`; HR at the end of rep 1 ${hs[0].hrEnd||hs[0].hr}${hs.length>1?`, last rep ${hs[hs.length-1].hrEnd||hs[hs.length-1].hr}`:""}, max ${Math.max(...hs.map(e=>e.hrMax||0))}`:"";
+  return `${w.k}×${clockOf(w.dur)} @ ${workVal(w.u,w.avg)}${pct}${each}${hr}; ${Math.round(w.all/60)} min of hard efforts in all${w.others?` incl. ${w.others} other effort${w.others>1?"s":""}`:""}${w.est?" (from the saved graph)":""}`; }
+// Effort of the work itself, so a hard interval session isn't rated easy because of its averages.
+function workRpe(s){ const w=workSet(s); if(!w||w.tot<360) return null; let r=null; const ftp=ftpOf();
+  if(w.u==="W"&&ftp){ const f=w.avg/ftp; r=f>=1.06?8:f>=0.98?7:f>=0.90?6:f>=0.82?5:null; }
+  const mx=Math.max(0,...w.reps.map(e=>e.hrEnd||0)); const lt=lthrOf(), hm=hrMaxOf(); let rh=null;
+  if(mx&&lt){ const f=mx/lt; rh=f>=1.0?7:f>=0.95?6:f>=0.90?5:null; } else if(mx&&hm){ const f=mx/hm; rh=f>=0.92?7:f>=0.88?6:f>=0.84?5:null; }
+  return r&&rh?Math.max(r,rh):(r||rh); }
+
 function parseTrack(text){
   const xml=new DOMParser().parseFromString(text,"application/xml");
   if(xml.getElementsByTagName("parsererror").length) throw new Error("This file can't be read. Use a GPX or TCX export.");
@@ -492,8 +534,9 @@ function parseTrack(text){
     if(dt>0&&dt<120&&(!hasPos||d/dt>=0.3||(pts[i].pw||0)>0)) moving+=dt; movCum.push(moving); }
   let gain=0,loss=0,anchor=null; for(const p of pts){ if(p.ele==null) continue; if(anchor==null){anchor=p.ele;continue;} const d=p.ele-anchor; if(d>=3){gain+=d;anchor=p.ele;} else if(d<=-3){loss-=d;anchor=p.ele;} }
   const hasTime=pts[0].t!=null&&pts[pts.length-1].t!=null; const elapsed=hasTime?(pts[pts.length-1].t-pts[0].t)/1000:null;
-  let hrSum=0,hrW=0,hrMax=null,pwSum=0,pwW=0,cadSum=0,cadW=0; const half=[{hr:0,w:0,d:0,t:0,p:0,pw:0},{hr:0,w:0,d:0,t:0,p:0,pw:0}]; const pw1s=[];
+  let hrSum=0,hrW=0,hrMax=null,pwSum=0,pwW=0,cadSum=0,cadW=0; const half=[{hr:0,w:0,d:0,t:0,p:0,pw:0},{hr:0,w:0,d:0,t:0,p:0,pw:0}]; const pw1s=[]; const ser={p:[],h:[],v:[]};
   for(let i=1;i<pts.length;i++){ const dt=hasTime?(pts[i].t-pts[i-1].t)/1000:1; if(!(dt>0&&dt<120)) continue; const h=movCum[i]<=moving/2?0:1; const seg=cum[i]-cum[i-1];
+    { const reps=Math.min(Math.round(dt),30), spd=seg/dt; for(let s=0;s<reps;s++){ ser.p.push(pts[i].pw??0); ser.h.push(pts[i].hr||0); ser.v.push(spd); } }
     if(!hasPos||seg/dt>=0.3){half[h].d+=seg;half[h].t+=dt;}
     if(pts[i].hr){hrSum+=pts[i].hr*dt;hrW+=dt;half[h].hr+=pts[i].hr*dt;half[h].w+=dt;hrMax=Math.max(hrMax||0,pts[i].hr);}
     if(pts[i].pw!=null){ pwSum+=pts[i].pw*dt; pwW+=dt; half[h].p+=pts[i].pw*dt; half[h].pw+=dt; for(let s=0;s<Math.min(Math.round(dt),30);s++) pw1s.push(pts[i].pw); }
@@ -513,7 +556,9 @@ function parseTrack(text){
   prof.x=hasPos?"km":"min";
   const durS=moving>0?moving:(elapsed||0); const kmh=durS?(dist/1000)/(durS/3600):0;
   const isRide=/cycl|bik|ride|velo|whoosh|zwift|rouvy/i.test(tag)||kmh>15||pwW>0; const indoor=/virtual|whoosh|zwift|rouvy|indoor/i.test(tag)||!hasPos||pwW>0; // power only comes from the home trainer
-  return { date:hasTime?isoDate(new Date(pts[0].t)):isoDate(today()), km:hasPos?Math.round(dist/10)/100:null,
+  const effs=!hasTime?null:isRide?(pwW>0?findEfforts(ser.p,ser.h,20):null):(hasPos?findEfforts(ser.v,ser.h,20):null);
+  const work=effs?{u:isRide?"W":"mps",e:effs}:null;
+  return { work, date:hasTime?isoDate(new Date(pts[0].t)):isoDate(today()), km:hasPos?Math.round(dist/10)/100:null,
     durationS:durS?Math.round(durS):null, elapsedS:elapsed?Math.round(elapsed):null, elevGain:Math.round(gain), elevLoss:Math.round(loss),
     avgHr:hrW?Math.round(hrSum/hrW):null, maxHr:hrMax?Math.round(hrMax):null, avgPower:pwW?Math.round(pwSum/pwW):null, np, p20, avgCad:cadW?Math.round(cadSum/cadW):null, decoupling,
     trackName:name.slice(0,80), profile:prof, sport:isRide?"ride":"run", where:isRide?(indoor?"indoor":"outdoor"):null };
@@ -530,7 +575,8 @@ const ftpOf=()=>+profile.ftp||0, hrMaxOf=()=>+profile.maxHr||0, lthrOf=()=>+prof
 const hrZ2Top=()=>lthrOf()?Math.round(.83*lthrOf()):hrMaxOf()?Math.round(.78*hrMaxOf()):0;
 const hrRecTop=()=>lthrOf()?Math.round(.68*lthrOf()):hrMaxOf()?Math.round(.66*hrMaxOf()):0;
 const NUMS={ftp:[80,600,"FTP","W"],weight:[35,200,"Weight","kg"],lthr:[100,210,"Threshold HR","bpm"],maxHr:[120,230,"Max HR","bpm"],restHr:[30,100,"Resting HR","bpm"]};
-function dataRpe(s){ const ftp=ftpOf(),hm=hrMaxOf(),m=minutesOf(s); const pw=+s.np||+s.avgPower;
+function dataRpe(s){ const a=avgDataRpe(s), w=workRpe(s); return a&&w?Math.max(a,w):(a||w); }
+function avgDataRpe(s){ const ftp=ftpOf(),hm=hrMaxOf(),m=minutesOf(s); const pw=+s.np||+s.avgPower;
   if(ftp&&pw&&m>=10){ const f=pw/ftp; return f<0.65?2:f<0.75?3:f<0.83?4:f<0.88?5:f<0.93?6:f<0.98?7:f<1.03?8:9; }
   const lt=lthrOf(); if(lt&&+s.avgHr&&m>=10&&s.sport!=="climb"&&s.sport!=="strength"){ const f=s.avgHr/lt; return f<0.69?2:f<0.84?3:f<0.90?4:f<0.95?5:f<1.00?6:f<1.05?7:8; }
   if(hm&&+s.avgHr&&m>=10&&s.sport!=="climb"&&s.sport!=="strength"){ const f=s.avgHr/hm; return f<0.70?2:f<0.78?3:f<0.83?4:f<0.87?5:f<0.90?6:f<0.93?7:8; }
@@ -688,7 +734,7 @@ function renderWeek(){
       const showHow=!done&&how&&n>=todayN&&n<=todayN+1;
       return `<div class="sess ${swapped||tooHard?"swapped":state==="done"?"done":state==="missed"?"missed":state==="opt"?"opt":""}" style="--c:${sportC(it.sport)}"${!done&&how&&!showHow?` title="${esc(how)}"`:""}>
         <span class="st">${swapped?"Easy instead":tooHard?"Too hard":state==="done"?(asKind?"Done as "+esc(asKind):"Done"):state==="opt"?"Optional":state==="missed"?"Missed":n===todayN?"Today":"Planned"}</span>
-        <b>${esc(sportL(it.sport))} · ${esc(it.kind)}</b><span class="m">${done?`${fmtMin(mins)} · RPE ${rpe}`:`${fmtMin(+it.min||0)}${it.note?" · "+esc(it.note):""}`}</span>
+        <b>${esc(sportL(it.sport))} · ${esc(it.kind)}</b><span class="m">${done?`${fmtMin(mins)} · RPE ${rpe}${QUALITY.includes(it.kind)&&ms.some(x=>workSet(x))?" · "+esc(workShort(ms.find(x=>workSet(x)))):""}`:`${fmtMin(+it.min||0)}${it.note?" · "+esc(it.note):""}`}</span>
         ${showHow?`<span class="how">${esc(how)}</span>`:""}
         ${!done&&n<=todayN&&can?`<div class="row-actions" style="margin-top:4px"><button class="btn small" type="button" data-qdone="${i}|${k}|${date}" title="Log it with the planned time; effort is estimated">✓ Done</button><button class="btn small ghost" type="button" data-logplan="${esc(it.sport)}|${esc(it.kind)}|${date}">Details</button></div>`:""}</div>`; }).join("");
     const extras=logged.filter(s=>!used.has(s.id)).map(s=>`<div class="sess extra" style="--c:${sportC(s.sport)}"><span class="st">Extra</span><b>${esc(sportL(s.sport))} · ${esc(s.kind)}</b><span class="m">${fmtMin(minutesOf(s))} · RPE ${rpeOf(s)}</span></div>`).join("");
@@ -744,7 +790,7 @@ function renderRows(){
       <td class="notes-cell">${s.niggle?`<span class="niggle">Niggle: ${esc(s.niggle)}</span>${s.notes?" · ":""}`:""}${esc(s.notes||"")}${fbMini(s.id)}</td></tr>`;
     if(!open) return row;
     return row+`<tr class="detail"><td colspan="10"><div class="detail-grid"><div>${s.profile?profileSvg(s.profile):`<p class="note">${esc(s.notes||"No notes.")}</p>`}</div>
-      <div><dl class="kv"><dt>Time</dt><dd>${fmtDur(s.durationS)}</dd>${s.avgPower?`<dt>Avg power</dt><dd>${s.avgPower} W</dd>`:""}${s.np?`<dt>Normalized power</dt><dd>${s.np} W</dd>`:""}${p20Of(s)?`<dt>Best 20 min</dt><dd>${p20Of(s)} W</dd>`:""}${s.np&&ftpOf()?`<dt>Intensity (IF)</dt><dd>${(s.np/ftpOf()).toFixed(2)}</dd>`:""}${s.avgCad?`<dt>Cadence</dt><dd>${s.avgCad} rpm</dd>`:""}<dt>HR avg / max</dt><dd>${s.avgHr||"–"} / ${s.maxHr||"–"}</dd>
+      <div><dl class="kv"><dt>Time</dt><dd>${fmtDur(s.durationS)}</dd>${s.avgPower?`<dt>Avg power</dt><dd>${s.avgPower} W</dd>`:""}${s.np?`<dt>Normalized power</dt><dd>${s.np} W</dd>`:""}${p20Of(s)?`<dt>Best 20 min</dt><dd>${p20Of(s)} W</dd>`:""}${s.np&&ftpOf()?`<dt>Intensity (IF)</dt><dd>${(s.np/ftpOf()).toFixed(2)}</dd>`:""}${workSet(s)?`<dt>Work</dt><dd>${esc(workShort(s))}${workSet(s).u==="W"&&ftpOf()?` · ${Math.round(workSet(s).avg/ftpOf()*100)}% FTP`:""}${workSet(s).k>1&&workSet(s).k<=12?`<br><span class="note">${workSet(s).reps.map(e=>workVal(workSet(s).u,e.v)).join(" · ")}</span>`:""}</dd>`:""}${s.avgCad?`<dt>Cadence</dt><dd>${s.avgCad} rpm</dd>`:""}<dt>HR avg / max</dt><dd>${s.avgHr||"–"} / ${s.maxHr||"–"}</dd>
       ${s.decoupling!=null?`<dt>HR drift</dt><dd>${s.decoupling}%</dd>`:""}<dt>RPE</dt><dd>${rpeOf(s)}${s.rpe?"":" (est.)"}</dd><dt>Feel</dt><dd>${s.feel?s.feel+"/5":"–"}</dd>
       ${s.grade?`<dt>Top grade</dt><dd>${esc(s.grade)}</dd>`:""}${s.fileName?`<dt>File</dt><dd style="overflow-wrap:anywhere">${esc(s.fileName)}</dd>`:""}</dl>
       ${can?`<div class="row-actions" style="margin-top:12px"><button class="btn" data-edit="${esc(s.id)}" type="button">Edit</button><button class="btn danger" data-del="${esc(s.id)}" type="button">Delete</button></div>`:""}</div></div>${fbBlock(s.id)}</td></tr>`; }).join("");
@@ -851,7 +897,7 @@ async function saveDraft(k,btn){ const card=document.querySelector(`.draft[data-
   const km=parseFloat(d.km); const body={date:d.date,sport:d.sport,kind:d.kind,where:d.sport==="ride"?(d.where||"outdoor"):null,durationS:dur,
     km:km>0?Math.round(km*100)/100:null,elevGain:num(d.elevGain),avgHr:num(d.avgHr),avgPower:d.sport==="ride"?num(d.avgPower):null,np:d.sport==="ride"?(d.np??null):null,p20:d.sport==="ride"?(d.p20??null):null,avgCad:d.avgCad??null,rpe:rpe>=1&&rpe<=10?rpe:null,
     feel:d.feel?+d.feel:null,niggle:String(d.niggle||"").trim().slice(0,200),notes:String(d.notes||"").trim().slice(0,1500),grade:d.sport==="climb"?String(d.grade||"").trim().slice(0,40):null,
-    elevLoss:d.elevLoss??null,maxHr:d.maxHr??null,decoupling:d.decoupling??null,elapsedS:d.elapsedS??null,fileName:d.fileName||null,profile:d.profile||null};
+    elevLoss:d.elevLoss??null,maxHr:d.maxHr??null,decoupling:d.decoupling??null,elapsedS:d.elapsedS??null,fileName:d.fileName||null,profile:d.profile||null,work:d.work??null};
   err.hidden=true; btn.disabled=true; btn.textContent="Saving…"; const id=d.editingId||`${body.date}-${Math.random().toString(36).slice(2,8)}`; const ex=sessions.find(x=>x.id===id);
   try{ await db.collection("sessions").doc(id).set({...body,createdAt:ex?.createdAt||Date.now(),updatedAt:Date.now()}); drafts=drafts.filter(x=>x.key!==k); renderDrafts();
     if(!d.editingId&&!isRoutine(body)){ fbBodies[id]={id,...body}; fbRecent.push(id); requestFeedback(id,"short"); } }
@@ -876,7 +922,7 @@ ${COACH_RULES()}
 
 ${PT`Write short coaching notes addressed to him ("you"). Plain text, no headings or tables. Use three labelled parts, each starting with the label in **bold** on its own line: **How it's going**, **This week**, **Watch for**. Each part is at most 2 short sentences or 3 short "- " bullets. Say only what matters most; skip anything he can read off the page himself, no restating of totals, no preamble or sign-off. Be specific to his sessions and notes; do not invent sessions. Never advise training through pain; for pain that persists, suggest a physiotherapist. Under 140 words.`}`;
 }
-function sessDesc(s){ return `${s.date} ${DAYS[dow(parseDate(s.date))]} ${s.sport}/${s.kind}${s.where?"/"+s.where:""}: ${fmtMin(minutesOf(s))}${s.km?`, ${km1(s.km)} km`:""}${s.elevGain?`, ${s.elevGain} m+`:""}, RPE ${rpeOf(s)}${s.rpe?"":" (est)"}${s.avgHr?`, HR ${s.avgHr}`:""}${s.avgPower?`, avg ${s.avgPower} W`:""}${s.np?`, NP ${s.np} W`:""}${p20Of(s)?`, best 20 min ${p20Of(s)} W`:""}${s.np&&ftpOf()?`, IF ${(s.np/ftpOf()).toFixed(2)}`:""}${s.avgCad?`, cad ${s.avgCad}`:""}${s.decoupling!=null&&steadyKinds.includes(s.kind)?`, HR drift ${s.decoupling}%`:""}${s.grade?`, top ${s.grade}`:""}, feel ${s.feel||"?"}/5${s.niggle?", NIGGLE: "+s.niggle:""}${s.notes?", notes: "+s.notes:""}${s.quick?" [quick]":""}`; }
+function sessDesc(s){ return `${s.date} ${DAYS[dow(parseDate(s.date))]} ${s.sport}/${s.kind}${s.where?"/"+s.where:""}: ${fmtMin(minutesOf(s))}${s.km?`, ${km1(s.km)} km`:""}${s.elevGain?`, ${s.elevGain} m+`:""}, RPE ${rpeOf(s)}${s.rpe?"":" (est)"}${s.avgHr?`, HR ${s.avgHr}`:""}${s.avgPower?`, avg ${s.avgPower} W`:""}${s.np?`, NP ${s.np} W`:""}${p20Of(s)?`, best 20 min ${p20Of(s)} W`:""}${s.np&&ftpOf()?`, IF ${(s.np/ftpOf()).toFixed(2)}`:""}${workSet(s)?`, WORK: ${workTxt(s)}`:""}${s.avgCad?`, cad ${s.avgCad}`:""}${s.decoupling!=null&&steadyKinds.includes(s.kind)?`, HR drift ${s.decoupling}%`:""}${s.grade?`, top ${s.grade}`:""}, feel ${s.feel||"?"}/5${s.niggle?", NIGGLE: "+s.niggle:""}${s.notes?", notes: "+s.notes:""}${s.quick?" [quick]":""}`; }
 function coachContext(){
   const cw=curWeekKey(); const t=tplDays(); const now=dayNum(today());
   const tplTxt=t?DAYS.map((d,i)=>`${d}: ${(t[i]||[]).map(x=>`${x.sport} ${x.kind} ${x.min} min${x.note?" ("+x.note+")":""}${x.optional?" [optional]":""}`).join(", ")||"rest"}`).join("\n"):"(no weekly structure set)";
@@ -934,6 +980,11 @@ The line you never cross
 - Never push through pain, a niggle, illness, feel scores that keep dropping, or several bad nights. Never plan two hard days back to back. Keep at least one full rest day in every seven. Keep weekly load within about 10–15% of his four-week average unless he has been building steadily. Stay conservative with finger tendons (climbing, hangboard) and with running, which adapt far slower than his cardio fitness.
 - When those signs say back off, backing off is the tough call. Hold him to resting as firmly as you hold him to working, say no if he wants to add more than is sensible, and give the reason. If he has already overdone it, take something out of the coming days rather than only warning him.
 - Telling the two apart: slacking is skipping with no reason while fresh; sensible rest has a reason in the data or his notes. If you cannot tell which it was, ask him rather than assume either way.
+
+Reading the data
+- For interval, workout, race and test sessions, judge the work intervals (WORK in the log), not the session averages. Average power, NP, IF and average HR include warm-up, recoveries and cool-down, so a hard interval session always has modest averages. Never call a session easy, slack or "ridden easy" because of its averages when the work intervals were on target.
+- Compare the work with what was planned that day: number and length of reps, power or pace against the target and % of FTP, and how heart rate climbed from the first rep to the last. Rising HR at steady power over the reps is the sign of a set that was hard enough. Fading power in the last reps means it was at the limit.
+- An estimated RPE (est) on an interval session already counts the work intervals. If a quality session has no WORK data (no power or speed in the file, or logged with one tap), say you can't judge the intensity instead of assuming it was easy.
 
 Tone
 - Direct, specific, plain. Lead with the most important thing, including when it is unwelcome. No flattery, no cheerleading, no softening a problem into a compliment, no hedging everything.
