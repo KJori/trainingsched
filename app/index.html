@@ -476,29 +476,37 @@ function findEfforts(v,h,minLen){ const n=v.length; if(n<600) return null;
 // Sessions saved before efforts were stored: rebuild them from the saved power/HR profile (about 20-s resolution, so only reps of a minute or more).
 const effCache=new Map();
 function effortsOf(s){ if(s.work) return s.work; if(s.work===null) return null; /* parsed from the full file and nothing found */
-  const pr=s.profile; if(!pr||pr.x!=="min"||!pr.p||pr.p.length<20) return null;
+  const pr=s.profile; if(!pr||!pr.p||pr.p.length<20||(pr.x!=="min"&&!(s.durationS>0))) return null;
+  const per=pr.x==="min"?null:s.durationS/pr.p.length; /* graphs against distance: points are evenly spaced in time */
   const key=`${s.id||s.date}:${pr.p.length}:${pr.d[pr.d.length-1]}`; if(effCache.has(key)) return effCache.get(key);
-  const v=[],h=[]; for(let i=0;i<pr.p.length;i++){ const dm=(i<pr.d.length-1?pr.d[i+1]-pr.d[i]:(pr.d[i]-pr.d[Math.max(0,i-1)]))||0; const k=Math.min(120,Math.round(dm*60)); for(let j=0;j<k;j++){ v.push(pr.p[i]??0); h.push(pr.h?.[i]||0); } }
+  const v=[],h=[]; for(let i=0;i<pr.p.length;i++){ const dm=per?per/60:(i<pr.d.length-1?pr.d[i+1]-pr.d[i]:(pr.d[i]-pr.d[Math.max(0,i-1)]))||0; const k=Math.min(120,Math.round(dm*60)); for(let j=0;j<k;j++){ v.push(pr.p[i]??0); h.push(pr.h?.[i]||0); } }
   const e=findEfforts(v,h,45); const w=e?{u:"W",e,est:true}:null; effCache.set(key,w); return w; }
-function workSet(s){ const w=effortsOf(s); if(!w||!w.e?.length) return null; const ef=w.e; let best=null;
-  for(const base of ef){ const g=ef.filter(e=>e.d>=base.d&&e.d<=base.d*1.3); const t=g.reduce((a,e)=>a+e.d,0); if(!best||t>best.t) best={g,t}; }
-  const reps=best.g; const tot=best.t; const avg=reps.reduce((a,e)=>a+e.v*e.d,0)/tot;
-  const ds=reps.map(e=>e.d).sort((a,b)=>a-b); const dur=Math.round(ds[Math.floor(ds.length/2)]/5)*5;
-  return {u:w.u,est:!!w.est,reps,k:reps.length,dur,tot,avg,all:ef.reduce((a,e)=>a+e.d,0),others:ef.length-reps.length}; }
+function workSet(s){ const w=effortsOf(s); if(!w||!w.e?.length) return null; let rest=w.e.slice(); const sets=[];
+  while(rest.length&&sets.length<3){ let best=null;
+    for(const base of rest){ const g=rest.filter(e=>e.d>=base.d&&e.d<=base.d*1.3); const t=g.reduce((a,e)=>a+e.d,0); if(!best||t>best.t) best={g,t}; }
+    if(sets.length&&(best.t<120||(best.g.length<2&&best.t<240))) break;
+    const reps=best.g, tot=best.t, avg=reps.reduce((a,e)=>a+e.v*e.d,0)/tot; const ds=reps.map(e=>e.d).sort((a,b)=>a-b);
+    sets.push({reps,k:reps.length,dur:Math.round(ds[Math.floor(ds.length/2)]/5)*5,tot,avg,first:reps[0].s}); rest=rest.filter(e=>!reps.includes(e)); }
+  const main=sets[0]; sets.sort((a,b)=>a.first-b.first);
+  return {...main,u:w.u,est:!!w.est,sets,all:w.e.reduce((a,e)=>a+e.d,0),others:rest.length}; }
 const clockOf=sec=>`${Math.floor(sec/60)}:${String(Math.round(sec%60)).padStart(2,"0")}`;
 const workVal=(u,x)=>u==="W"?`${Math.round(x)} W`:x>0?`${clockOf(1000/x)}/km`:"–";
-function workShort(s){ const w=workSet(s); if(!w) return ""; return `${w.k}×${clockOf(w.dur)} @ ${workVal(w.u,w.avg)}`; }
+const setShort=(u,t)=>`${t.k}×${clockOf(t.dur)} @ ${workVal(u,t.avg)}`;
+function workShort(s){ const w=workSet(s); if(!w) return ""; return w.sets.map(t=>setShort(w.u,t)).join(" + "); }
 function workTxt(s){ const w=workSet(s); if(!w) return ""; const ftp=ftpOf();
-  const pct=w.u==="W"&&ftp?` (${Math.round(w.avg/ftp*100)}% of FTP)`:"";
-  const each=w.k>1&&w.k<=12?`; reps ${w.reps.map(e=>w.u==="W"?Math.round(e.v):workVal(w.u,e.v).replace("/km","")).join(", ")}${w.u==="W"?" W":"/km"}`:"";
-  const hs=w.reps.filter(e=>e.hrEnd||e.hr); const hr=hs.length?`; HR at the end of rep 1 ${hs[0].hrEnd||hs[0].hr}${hs.length>1?`, last rep ${hs[hs.length-1].hrEnd||hs[hs.length-1].hr}`:""}, max ${Math.max(...hs.map(e=>e.hrMax||0))}`:"";
-  return `${w.k}×${clockOf(w.dur)} @ ${workVal(w.u,w.avg)}${pct}${each}${hr}; ${Math.round(w.all/60)} min of hard efforts in all${w.others?` incl. ${w.others} other effort${w.others>1?"s":""}`:""}${w.est?" (from the saved graph)":""}`; }
+  const one=t=>{ const pct=w.u==="W"&&ftp?` (${Math.round(t.avg/ftp*100)}% of FTP)`:"";
+    const each=t.k>1&&t.k<=12?`, reps ${t.reps.map(e=>w.u==="W"?Math.round(e.v):workVal(w.u,e.v).replace("/km","")).join("/")}${w.u==="W"?" W":"/km"}`:"";
+    const hs=t.reps.filter(e=>e.hrEnd||e.hr); const hr=hs.length?`, HR at the end of ${hs.length>1?`rep 1 ${hs[0].hrEnd||hs[0].hr} and the last rep ${hs[hs.length-1].hrEnd||hs[hs.length-1].hr}`:`the rep ${hs[0].hrEnd||hs[0].hr}`} (max ${Math.max(...hs.map(e=>e.hrMax||0))})`:"";
+    return `${setShort(w.u,t)}${pct}${each}${hr}`; };
+  return `${w.sets.map(one).join("; then ")}; ${Math.round(w.all/60)} min of hard efforts in all${w.others?` incl. ${w.others} other short effort${w.others>1?"s":""}`:""}${w.est?" (from the saved graph)":""}`; }
 // Effort of the work itself, so a hard interval session isn't rated easy because of its averages.
-function workRpe(s){ const w=workSet(s); if(!w||w.tot<360) return null; let r=null; const ftp=ftpOf();
-  if(w.u==="W"&&ftp){ const f=w.avg/ftp; r=f>=1.06?8:f>=0.98?7:f>=0.90?6:f>=0.82?5:null; }
-  const mx=Math.max(0,...w.reps.map(e=>e.hrEnd||0)); const lt=lthrOf(), hm=hrMaxOf(); let rh=null;
-  if(mx&&lt){ const f=mx/lt; rh=f>=1.0?7:f>=0.95?6:f>=0.90?5:null; } else if(mx&&hm){ const f=mx/hm; rh=f>=0.92?7:f>=0.88?6:f>=0.84?5:null; }
-  return r&&rh?Math.max(r,rh):(r||rh); }
+function workRpe(s){ const w=workSet(s); if(!w) return null; const ftp=ftpOf(), lt=lthrOf(), hm=hrMaxOf(); let best=null;
+  for(const t of w.sets){ if(t.tot<300) continue; let r=null;
+    if(w.u==="W"&&ftp){ const f=t.avg/ftp; r=f>=1.06?8:f>=0.98?7:f>=0.90?6:f>=0.82?5:null; }
+    const mx=Math.max(0,...t.reps.map(e=>e.hrEnd||0)); let rh=null;
+    if(mx&&lt){ const f=mx/lt; rh=f>=1.0?7:f>=0.95?6:f>=0.90?5:null; } else if(mx&&hm){ const f=mx/hm; rh=f>=0.92?7:f>=0.88?6:f>=0.84?5:null; }
+    const v=r&&rh?Math.max(r,rh):(r||rh); if(v&&(!best||v>best)) best=v; }
+  return best; }
 
 function parseTrack(text){
   const xml=new DOMParser().parseFromString(text,"application/xml");
@@ -790,7 +798,7 @@ function renderRows(){
       <td class="notes-cell">${s.niggle?`<span class="niggle">Niggle: ${esc(s.niggle)}</span>${s.notes?" · ":""}`:""}${esc(s.notes||"")}${fbMini(s.id)}</td></tr>`;
     if(!open) return row;
     return row+`<tr class="detail"><td colspan="10"><div class="detail-grid"><div>${s.profile?profileSvg(s.profile):`<p class="note">${esc(s.notes||"No notes.")}</p>`}</div>
-      <div><dl class="kv"><dt>Time</dt><dd>${fmtDur(s.durationS)}</dd>${s.avgPower?`<dt>Avg power</dt><dd>${s.avgPower} W</dd>`:""}${s.np?`<dt>Normalized power</dt><dd>${s.np} W</dd>`:""}${p20Of(s)?`<dt>Best 20 min</dt><dd>${p20Of(s)} W</dd>`:""}${s.np&&ftpOf()?`<dt>Intensity (IF)</dt><dd>${(s.np/ftpOf()).toFixed(2)}</dd>`:""}${workSet(s)?`<dt>Work</dt><dd>${esc(workShort(s))}${workSet(s).u==="W"&&ftpOf()?` · ${Math.round(workSet(s).avg/ftpOf()*100)}% FTP`:""}${workSet(s).k>1&&workSet(s).k<=12?`<br><span class="note">${workSet(s).reps.map(e=>workVal(workSet(s).u,e.v)).join(" · ")}</span>`:""}</dd>`:""}${s.avgCad?`<dt>Cadence</dt><dd>${s.avgCad} rpm</dd>`:""}<dt>HR avg / max</dt><dd>${s.avgHr||"–"} / ${s.maxHr||"–"}</dd>
+      <div><dl class="kv"><dt>Time</dt><dd>${fmtDur(s.durationS)}</dd>${s.avgPower?`<dt>Avg power</dt><dd>${s.avgPower} W</dd>`:""}${s.np?`<dt>Normalized power</dt><dd>${s.np} W</dd>`:""}${p20Of(s)?`<dt>Best 20 min</dt><dd>${p20Of(s)} W</dd>`:""}${s.np&&ftpOf()?`<dt>Intensity (IF)</dt><dd>${(s.np/ftpOf()).toFixed(2)}</dd>`:""}${workSet(s)?`<dt>Work</dt><dd>${workSet(s).sets.map(t=>`${esc(setShort(workSet(s).u,t))}${workSet(s).u==="W"&&ftpOf()?` · ${Math.round(t.avg/ftpOf()*100)}% FTP`:""}${t.k>1&&t.k<=12?`<br><span class="note">${t.reps.map(e=>workVal(workSet(s).u,e.v)).join(" · ")}</span>`:""}`).join("<br>")}</dd>`:""}${s.avgCad?`<dt>Cadence</dt><dd>${s.avgCad} rpm</dd>`:""}<dt>HR avg / max</dt><dd>${s.avgHr||"–"} / ${s.maxHr||"–"}</dd>
       ${s.decoupling!=null?`<dt>HR drift</dt><dd>${s.decoupling}%</dd>`:""}<dt>RPE</dt><dd>${rpeOf(s)}${s.rpe?"":" (est.)"}</dd><dt>Feel</dt><dd>${s.feel?s.feel+"/5":"–"}</dd>
       ${s.grade?`<dt>Top grade</dt><dd>${esc(s.grade)}</dd>`:""}${s.fileName?`<dt>File</dt><dd style="overflow-wrap:anywhere">${esc(s.fileName)}</dd>`:""}</dl>
       ${can?`<div class="row-actions" style="margin-top:12px"><button class="btn" data-edit="${esc(s.id)}" type="button">Edit</button><button class="btn danger" data-del="${esc(s.id)}" type="button">Delete</button></div>`:""}</div></div>${fbBlock(s.id)}</td></tr>`; }).join("");
@@ -1020,7 +1028,7 @@ function fbBlock(id,title){ const f=fbFor(id); if(!sample&&!f.short) return "";
   if(f.short) h+=`<div class="fb-t">${mdLite(f.short)}</div>`; else if(f.busy==="short") h+=`<div class="fb-t note">Looking at this session…</div>`;
   if(f.long) h+=`<div class="fb-t fb-long">${mdLite(f.long)}</div>`; else if(f.busy==="long") h+=`<div class="fb-t fb-long note">Writing more…</div>`;
   if(f.err) h+=`<div class="err">${esc(f.err)}</div>`;
-  if(sample&&!f.busy){ if(!f.short) h+=`<div class="row-actions"><button class="btn small" type="button" data-fb="${esc(id)}|short">Get feedback</button></div>`; else if(!f.long) h+=`<div class="row-actions"><button class="btn small" type="button" data-fb="${esc(id)}|long">More</button></div>`; }
+  if(sample&&!f.busy){ if(!f.short) h+=`<div class="row-actions"><button class="btn small" type="button" data-fb="${esc(id)}|short">Get feedback</button></div>`; else h+=`<div class="row-actions">${f.long?"":`<button class="btn small" type="button" data-fb="${esc(id)}|long">More</button>`}<button class="btn small ghost" type="button" data-fbredo="${esc(id)}" title="Ask the coach again, with the latest data">Redo</button></div>`; }
   return h+`</div>`; }
 function renderFbRecent(){ $("fbRecent").innerHTML=fbRecent.slice(-3).reverse().map(id=>{ const s=fbFor(id).s; if(!s) return ""; return fbBlock(id,`${sportL(s.sport)} ${s.kind}, ${fmtDay(s.date)}`); }).join(""); }
 function renderFb(){ renderRows(); renderFbRecent(); }
@@ -1239,6 +1247,7 @@ document.addEventListener("click",async e=>{
     try{ await db.collection("sessions").doc(`${date}-${Math.random().toString(36).slice(2,8)}`).set({date,sport:it.sport,kind:it.kind,where:it.sport==="ride"?"outdoor":null,durationS:(+it.min||0)*60,km:null,elevGain:null,avgHr:null,avgPower:null,rpe:null,feel:null,niggle:"",notes:"",grade:null,quick:true,createdAt:Date.now(),updatedAt:Date.now()}); }
     catch(_){ t.disabled=false; t.textContent="Couldn't save. Retry"; } return; }
   if(t.dataset.logplan){ const [sport,kind,date]=t.dataset.logplan.split("|"); addDraft({date,sport,kind}); goView("week"); $("logPanel").scrollIntoView({behavior:"smooth",block:"start"}); return; }
+  if(t.dataset.fbredo){ const id=t.dataset.fbredo; fb[id]={...(fb[id]||{}),short:"",long:""}; if(db&&canWrite) db.doc("sessions/"+id).update({coachLong:""}).catch(()=>{}); requestFeedback(id,"short"); return; }
   if(t.dataset.fb){ const [id,mode]=t.dataset.fb.split("|"); requestFeedback(id,mode); return; }
   if(t.dataset.fbx){ fbRecent=fbRecent.filter(x=>x!==t.dataset.fbx); renderFbRecent(); return; }
   if(t.id==="coachBtn"){ runCoach(); return; } if(t.id==="coachStop"){ coachCtl?.abort(); return; }
